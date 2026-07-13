@@ -1,0 +1,1353 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2870
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 <!DOCTYPE html>\
+<html lang="de">\
+<head>\
+    <meta charset="UTF-8">\
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">\
+    <title>Saelog - Logistik & Delivery</title>\
+    \
+    <!-- Tailwind CSS & FontAwesome -->\
+    <script src="https://cdn.tailwindcss.com"></script>\
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">\
+    \
+    <!-- Google Fonts -->\
+    <link rel="preconnect" href="https://fonts.googleapis.com">\
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">\
+    \
+    <!-- PDF.js von Mozilla -->\
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>\
+\
+    <!-- Leaflet.js f\'fcr Map -->\
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />\
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>\
+\
+    <style>\
+        body \{ font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; \}\
+        .no-scrollbar::-webkit-scrollbar \{ display: none; \}\
+        .no-scrollbar \{ -ms-overflow-style: none; scrollbar-width: none; \}\
+        .leaflet-container \{ background: #0f172a !important; z-index: 10 !important; \}\
+        \
+        .custom-map-marker \{\
+            background-color: #14b8a6;\
+            color: #0f172a;\
+            font-weight: bold;\
+            border: 2px solid white;\
+            border-radius: 50%;\
+            display: flex;\
+            align-items: center;\
+            justify-content: center;\
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.5);\
+            font-size: 11px;\
+        \}\
+        .start-marker \{\
+            background-color: #f43f5e;\
+            border: 3px solid white;\
+            border-radius: 50%;\
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.5);\
+        \}\
+    </style>\
+</head>\
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col selection:bg-teal-500 selection:text-white pb-24">\
+\
+    <!-- HEADER -->\
+    <header class="bg-slate-800/80 backdrop-blur-md border-b border-slate-700/50 sticky top-0 z-40 px-4 py-3">\
+        <div class="max-w-6xl mx-auto flex items-center justify-between">\
+            <div class="flex items-center space-x-3">\
+                <div class="bg-gradient-to-tr from-teal-500 to-emerald-400 p-2 rounded-xl shadow-lg shadow-teal-500/20">\
+                    <i class="fa-solid fa-truck-ramp-box text-white text-lg"></i>\
+                </div>\
+                <div>\
+                    <h1 class="text-lg font-bold tracking-tight bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">SAELOG</h1>\
+                    <p class="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Logistik & Delivery</p>\
+                </div>\
+            </div>\
+\
+            <div class="flex items-center space-x-2">\
+                <button id="btn-settings" onclick="openSettingsModal()" class="hidden items-center justify-center w-8 h-8 rounded-xl bg-slate-700 hover:bg-slate-600 transition text-slate-200 shadow-sm" title="Einstellungen (Nur B\'fcro)">\
+                    <i class="fa-solid fa-gear"></i>\
+                </button>\
+\
+                <button onclick="openRoleSelectModal()" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 transition text-xs font-semibold text-slate-200">\
+                    <i class="fa-solid fa-user-shield text-teal-400"></i>\
+                    <span id="roleHeaderBadge">Rolle: Laden...</span>\
+                </button>\
+                \
+                <div id="statusBadge" class="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 text-xs font-semibold cursor-pointer transition hover:bg-teal-500/20">\
+                    <span class="relative flex h-2 w-2">\
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>\
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span>\
+                    </span>\
+                    <span id="statusText">Lokal-Modus</span>\
+                </div>\
+            </div>\
+        </div>\
+    </header>\
+\
+    <!-- HAUPTINHALT -->\
+    <main class="flex-grow max-w-6xl w-full mx-auto px-4 py-6">\
+        \
+        <!-- SEITE 1: LOGISTIKER -->\
+        <div id="page-logistiker" class="space-y-6">\
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">\
+                <div>\
+                    <h2 class="text-2xl font-bold text-white">Kommissionierung & Richten</h2>\
+                    <p class="text-sm text-slate-400">Bereite Lieferungen vor und verwalte den Status.</p>\
+                </div>\
+                <button id="btn-new-order" onclick="openNewOrderModal()" class="bg-teal-500 hover:bg-teal-600 active:scale-95 transition-all text-slate-900 font-bold px-5 py-3 rounded-xl shadow-lg shadow-teal-500/20 flex items-center justify-center space-x-2 self-stretch sm:self-auto">\
+                    <i class="fa-solid fa-file-circle-plus"></i>\
+                    <span>Neuer Lieferschein</span>\
+                </button>\
+            </div>\
+\
+            <!-- LIFO TOURENPLANER -->\
+            <div class="bg-slate-800/80 border border-teal-500/25 rounded-2xl p-5 space-y-4 shadow-xl">\
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">\
+                    <div class="flex items-center space-x-2.5">\
+                        <div class="w-10 h-10 rounded-xl bg-teal-500/10 text-teal-400 flex items-center justify-center">\
+                            <i class="fa-solid fa-truck-loading text-lg"></i>\
+                        </div>\
+                        <div>\
+                            <h4 class="font-bold text-white text-sm">\uc0\u55357 \u56986  Lkw Ladeplan (LIFO)</h4>\
+                            <p class="text-xs text-slate-400">Pfeiltasten nutzen, um Reihenfolge anzupassen.</p>\
+                        </div>\
+                    </div>\
+                    <div class="flex flex-wrap items-center gap-2">\
+                        <div class="flex items-center space-x-1.5 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-700/60">\
+                            <span class="text-xs text-slate-400"><i class="fa-solid fa-calendar text-teal-400"></i></span>\
+                            <input type="date" id="lifo-date-filter" class="bg-transparent text-xs text-white outline-none" onchange="optimizeLogistikPackliste(false)">\
+                        </div>\
+                        <button onclick="optimizeLogistikPackliste(true)" class="bg-teal-500 hover:bg-teal-600 text-slate-900 font-bold text-xs py-2 px-3.5 rounded-xl transition active:scale-95 flex items-center space-x-1.5 shadow-lg shadow-teal-500/10">\
+                            <i class="fa-solid fa-route"></i>\
+                            <span>Ladeliste berechnen</span>\
+                        </button>\
+                    </div>\
+                </div>\
+\
+                <div id="logistik-lifo-container" class="hidden flex-col items-center pt-2">\
+                    <div class="w-full max-w-md bg-slate-900 border-2 border-slate-700 rounded-t-3xl border-b-0 relative pt-10 pb-4 px-4 flex flex-col gap-2 shadow-2xl">\
+                        <div class="absolute top-2 left-1/2 -translate-x-1/2 text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-800 px-3 py-1 rounded-full">Lkw Stirnwand (Zuerst laden)</div>\
+                        <ol id="logistik-lifo-list" class="flex flex-col gap-2 w-full"></ol>\
+                    </div>\
+                    <div class="w-full max-w-md h-4 bg-teal-500/20 border-x-2 border-b-2 border-teal-500/50 rounded-b-md relative mb-2">\
+                        <div class="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs font-bold text-teal-400 flex items-center gap-2">\
+                            <i class="fa-solid fa-arrow-down"></i> Ladekante / T\'fcr (Zuletzt laden)\
+                        </div>\
+                    </div>\
+                </div>\
+            </div>\
+\
+            <!-- Offene Auftr\'e4ge -->\
+            <div class="space-y-4 pt-4">\
+                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider flex items-center space-x-2">\
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>\
+                    <span>Laufende Kommissionierung</span>\
+                    <span id="count-offen" class="bg-slate-800 text-slate-300 text-xs px-2.5 py-0.5 rounded-full ml-2">0</span>\
+                </h3>\
+                <div id="list-offen" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>\
+            </div>\
+\
+            <!-- Gerichtete Auftr\'e4ge -->\
+            <div class="space-y-4 pt-4">\
+                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider flex items-center space-x-2">\
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>\
+                    <span>Abgeschlossene Arbeiten (GERICHTET)</span>\
+                    <span id="count-bereit" class="bg-slate-800 text-slate-300 text-xs px-2.5 py-0.5 rounded-full ml-2">0</span>\
+                </h3>\
+                <div id="list-bereit" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>\
+            </div>\
+        </div>\
+\
+        <!-- SEITE 2: FAHRER -->\
+        <div id="page-fahrer" class="space-y-6 hidden">\
+            <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4">\
+                <div>\
+                    <h2 class="text-2xl font-bold text-white">Zustell-Tour</h2>\
+                    <div class="flex items-center space-x-2 mt-1">\
+                        <input type="date" id="fahrer-date-filter" class="bg-slate-800 border border-slate-700 text-white text-sm rounded-xl px-3 py-2 outline-none focus:border-teal-500" onchange="renderFahrerTour()">\
+                        <p class="text-sm text-slate-400">Auftr\'e4ge f\'fcr diesen Tag.</p>\
+                    </div>\
+                </div>\
+                \
+                <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">\
+                    <button onclick="openFullRouteInMaps()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-2.5 rounded-xl flex items-center justify-center space-x-1.5 flex-1 sm:flex-initial text-[11px] sm:text-xs shadow-lg">\
+                        <i class="fa-solid fa-map-location-dot text-sm"></i>\
+                        <span>Ganze Route (ab Lager)</span>\
+                    </button>\
+                    <button onclick="toggleMap()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold px-3 py-2.5 rounded-xl flex items-center justify-center space-x-1.5 flex-1 sm:flex-initial text-[11px] sm:text-xs">\
+                        <i class="fa-solid fa-map text-sm"></i>\
+                        <span id="btn-map-text">Karte anzeigen</span>\
+                    </button>\
+                    <button id="btn-optimize" onclick="optimizeRoute()" class="bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-bold px-3 py-2.5 rounded-xl flex items-center justify-center space-x-1.5 flex-1 sm:flex-initial text-[11px] sm:text-xs shadow-lg shadow-emerald-500/10">\
+                        <i class="fa-solid fa-route animate-pulse text-sm"></i>\
+                        <span>Weg optimieren</span>\
+                    </button>\
+                </div>\
+            </div>\
+            \
+            <div id="map-container" class="bg-slate-800 border border-slate-700/60 rounded-2xl p-2 hidden">\
+                <div id="route-map" class="h-[400px] w-full rounded-xl relative"></div>\
+            </div>\
+            <div id="list-fahrer-tour" class="space-y-4"></div>\
+        </div>\
+\
+        <!-- SEITE 3: MONTAGE -->\
+        <div id="page-montage" class="space-y-6 hidden">\
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">\
+                <div>\
+                    <h2 class="text-2xl font-bold text-white">Montageservice</h2>\
+                    <p class="text-sm text-slate-400">Termine, Status und Foto-Dokumentation.</p>\
+                </div>\
+            </div>\
+            <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-3 flex items-center space-x-2 overflow-x-auto no-scrollbar shadow-lg">\
+                <div class="flex space-x-2 flex-grow" id="montage-week-picker"></div>\
+            </div>\
+            <div class="space-y-4 pt-2">\
+                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider flex items-center space-x-2">\
+                    <span class="w-2.5 h-2.5 rounded-full bg-teal-500"></span>\
+                    <span id="montage-list-title">Anstehende Montagen</span>\
+                </h3>\
+                <div id="list-montage-appointments" class="grid grid-cols-1 lg:grid-cols-2 gap-4"></div>\
+            </div>\
+        </div>\
+\
+        <!-- SEITE 4: ARCHIV -->\
+        <div id="page-archiv" class="space-y-6 hidden">\
+            <div>\
+                <h2 class="text-2xl font-bold text-white">Lager-Archiv</h2>\
+                <p class="text-sm text-slate-400">\'dcbersicht aller abgeschlossenen Auftr\'e4ge.</p>\
+            </div>\
+            <div class="bg-slate-800/50 rounded-2xl border border-slate-700/50 overflow-hidden">\
+                <div class="overflow-x-auto">\
+                    <table class="w-full text-left border-collapse">\
+                        <thead>\
+                            <tr class="bg-slate-800 text-slate-300 text-xs uppercase tracking-wider border-b border-slate-700/50">\
+                                <th class="p-4">Kunde</th>\
+                                <th class="p-4">Termin & Art</th>\
+                                <th class="p-4">Zahlungsart</th>\
+                                <th class="p-4">Status</th>\
+                                <th class="p-4 text-right">Details</th>\
+                            </tr>\
+                        </thead>\
+                        <tbody id="table-archiv-body" class="divide-y divide-slate-700/30 text-sm"></tbody>\
+                    </table>\
+                </div>\
+            </div>\
+        </div>\
+    </main>\
+\
+    <!-- UNTERE NAVIGATION -->\
+    <nav id="bottom-nav" class="bg-slate-900/95 backdrop-blur-lg border-t border-slate-800 fixed bottom-0 left-0 right-0 z-40 px-4 py-2 shadow-2xl">\
+        <div class="max-w-md mx-auto flex items-center justify-around">\
+            <button onclick="switchTab('logistiker')" id="tab-logistiker" class="flex flex-col items-center space-y-1 py-1.5 text-teal-400 font-semibold transition-all duration-200">\
+                <i class="fa-solid fa-warehouse text-xl"></i>\
+                <span class="text-[11px] tracking-wide">Logistiker</span>\
+            </button>\
+            <button onclick="switchTab('fahrer')" id="tab-fahrer" class="flex flex-col items-center space-y-1 py-1.5 text-slate-400 font-medium transition-all duration-200">\
+                <div class="relative">\
+                    <i class="fa-solid fa-truck text-xl"></i>\
+                    <span id="badge-fahrer-count" class="absolute -top-1.5 -right-2 bg-rose-500 text-white text-[9px] w-4.5 h-4.5 flex items-center justify-center rounded-full font-bold border border-slate-900 hidden">0</span>\
+                </div>\
+                <span class="text-[11px] tracking-wide">Fahrer</span>\
+            </button>\
+            <button onclick="switchTab('montage')" id="tab-montage" class="flex flex-col items-center space-y-1 py-1.5 text-slate-400 font-medium transition-all duration-200">\
+                <i class="fa-solid fa-screwdriver-wrench text-xl"></i>\
+                <span class="text-[11px] tracking-wide">Montage</span>\
+            </button>\
+            <button onclick="switchTab('archiv')" id="tab-archiv" class="flex flex-col items-center space-y-1 py-1.5 text-slate-400 font-medium transition-all duration-200">\
+                <i class="fa-solid fa-list-check text-xl"></i>\
+                <span class="text-[11px] tracking-wide">Archiv</span>\
+            </button>\
+        </div>\
+    </nav>\
+\
+    <!-- MODAL: ROLLENAUSWAHL -->\
+    <div id="modal-role-select" class="fixed inset-0 bg-slate-950 z-[100] flex items-center justify-center p-4 hidden">\
+        <div class="bg-slate-800 border border-slate-700/80 rounded-3xl w-full max-w-lg p-6 space-y-5 shadow-2xl">\
+            <div class="text-center space-y-2">\
+                <div class="bg-gradient-to-tr from-teal-500 to-emerald-400 p-3 rounded-2xl inline-block shadow-lg">\
+                    <i class="fa-solid fa-shield-halved text-slate-900 text-2xl"></i>\
+                </div>\
+                <h2 class="text-2xl font-bold text-white">Willkommen bei Saelog</h2>\
+                <p class="text-sm text-slate-400">Bitte w\'e4hle deine Arbeitsrolle aus.</p>\
+            </div>\
+            <div class="grid grid-cols-1 gap-3">\
+                <button onclick="selectRolePrompt('admin')" class="flex items-center justify-between p-4 bg-slate-900/60 hover:bg-slate-900 border border-slate-700 hover:border-teal-500 rounded-2xl transition text-left group">\
+                    <div class="flex items-center space-x-4">\
+                        <div class="bg-teal-500/10 text-teal-400 group-hover:bg-teal-500 group-hover:text-slate-900 p-3 rounded-xl transition"><i class="fa-solid fa-laptop-code text-lg"></i></div>\
+                        <div><h4 class="font-bold text-white text-base">B\'fcro / Admin</h4></div>\
+                    </div><i class="fa-solid fa-chevron-right text-slate-500 group-hover:text-teal-400 transition"></i>\
+                </button>\
+                <button onclick="selectRolePrompt('logistiker')" class="flex items-center justify-between p-4 bg-slate-900/60 hover:bg-slate-900 border border-slate-700 hover:border-teal-500 rounded-2xl transition text-left group">\
+                    <div class="flex items-center space-x-4">\
+                        <div class="bg-teal-500/10 text-teal-400 group-hover:bg-teal-500 group-hover:text-slate-900 p-3 rounded-xl transition"><i class="fa-solid fa-boxes-stacked text-lg"></i></div>\
+                        <div><h4 class="font-bold text-white text-base">Kommissionierer / Logistik</h4></div>\
+                    </div><i class="fa-solid fa-chevron-right text-slate-500 group-hover:text-teal-400 transition"></i>\
+                </button>\
+                <button onclick="selectRolePrompt('fahrer')" class="flex items-center justify-between p-4 bg-slate-900/60 hover:bg-slate-900 border border-slate-700 hover:border-teal-500 rounded-2xl transition text-left group">\
+                    <div class="flex items-center space-x-4">\
+                        <div class="bg-teal-500/10 text-teal-400 group-hover:bg-teal-500 group-hover:text-slate-900 p-3 rounded-xl transition"><i class="fa-solid fa-truck text-lg"></i></div>\
+                        <div><h4 class="font-bold text-white text-base">Fahrer / Zusteller</h4></div>\
+                    </div><i class="fa-solid fa-chevron-right text-slate-500 group-hover:text-teal-400 transition"></i>\
+                </button>\
+                <button onclick="selectRolePrompt('montage')" class="flex items-center justify-between p-4 bg-slate-900/60 hover:bg-slate-900 border border-slate-700 hover:border-teal-500 rounded-2xl transition text-left group">\
+                    <div class="flex items-center space-x-4">\
+                        <div class="bg-teal-500/10 text-teal-400 group-hover:bg-teal-500 group-hover:text-slate-900 p-3 rounded-xl transition"><i class="fa-solid fa-screwdriver-wrench text-lg"></i></div>\
+                        <div><h4 class="font-bold text-white text-base">Montageservice</h4></div>\
+                    </div><i class="fa-solid fa-chevron-right text-slate-500 group-hover:text-teal-400 transition"></i>\
+                </button>\
+            </div>\
+        </div>\
+    </div>\
+\
+    <!-- MODAL: PIN CODE -->\
+    <div id="modal-pin-entry" class="fixed inset-0 bg-slate-950/90 z-[110] flex items-center justify-center p-4 hidden">\
+        <div class="bg-slate-800 border border-slate-700/80 rounded-3xl w-full max-w-sm p-6 space-y-5 shadow-2xl text-center">\
+            <div class="space-y-2">\
+                <div class="w-12 h-12 rounded-full bg-teal-500/10 text-teal-400 flex items-center justify-center mx-auto text-xl"><i class="fa-solid fa-user-lock"></i></div>\
+                <h3 class="text-lg font-bold text-white" id="pin-prompt-title">Login</h3>\
+            </div>\
+            <div class="text-left space-y-1.5">\
+                <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400">Dein Name *</label>\
+                <input type="text" id="pin-employee-name" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-teal-500" placeholder="Name">\
+            </div>\
+            <div class="text-left space-y-1.5">\
+                <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400">Rollen-PIN *</label>\
+                <input type="password" id="pin-display" readonly class="bg-slate-900 text-white text-2xl font-bold tracking-widest text-center rounded-xl w-full py-2.5 border border-slate-700 focus:outline-none focus:border-teal-500">\
+            </div>\
+            <div class="grid grid-cols-3 gap-2 max-w-[240px] mx-auto pt-1">\
+                <button onclick="pressPin('1')" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl">1</button>\
+                <button onclick="pressPin('2')" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl">2</button>\
+                <button onclick="pressPin('3')" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl">3</button>\
+                <button onclick="pressPin('4')" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl">4</button>\
+                <button onclick="pressPin('5')" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl">5</button>\
+                <button onclick="pressPin('6')" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl">6</button>\
+                <button onclick="pressPin('7')" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl">7</button>\
+                <button onclick="pressPin('8')" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl">8</button>\
+                <button onclick="pressPin('9')" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl">9</button>\
+                <button onclick="pressPin('clear')" class="bg-slate-700/50 hover:bg-slate-700 text-rose-400 font-bold py-3 rounded-xl text-xs">L\'f6schen</button>\
+                <button onclick="pressPin('0')" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl">0</button>\
+                <button onclick="submitPin()" class="bg-teal-500 hover:bg-teal-600 text-slate-900 font-bold py-3 rounded-xl text-xs">OK</button>\
+            </div>\
+            <button onclick="closePinModal()" class="text-xs text-slate-400 hover:text-white mt-1 underline">Abbrechen</button>\
+        </div>\
+    </div>\
+\
+    <!-- MODAL EINSTELLUNGEN -->\
+    <div id="modal-settings" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">\
+        <div class="bg-slate-800 border border-slate-700/80 rounded-2xl w-full max-w-sm overflow-hidden flex flex-col shadow-2xl">\
+            <div class="p-5 border-b border-slate-700/50 flex items-center justify-between">\
+                <h3 class="text-lg font-bold text-white flex items-center space-x-2">\
+                    <i class="fa-solid fa-gear text-teal-400"></i>\
+                    <span>Zugangs-PINs \'e4ndern</span>\
+                </h3>\
+                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button>\
+            </div>\
+            <div class="p-6 space-y-4">\
+                <p class="text-xs text-slate-400 mb-2">Hier kannst du die Passw\'f6rter f\'fcr alle Bereiche anpassen. Die \'c4nderung wird sofort f\'fcr alle Ger\'e4te \'fcbernommen.</p>\
+                <div>\
+                    <label class="block text-xs font-bold text-slate-300 mb-1">B\'fcro / Admin PIN</label>\
+                    <input type="text" id="set-pin-admin" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:border-teal-500 outline-none font-bold tracking-widest">\
+                </div>\
+                <div>\
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Logistik PIN</label>\
+                    <input type="text" id="set-pin-logistik" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:border-teal-500 outline-none font-bold tracking-widest">\
+                </div>\
+                <div>\
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Fahrer PIN</label>\
+                    <input type="text" id="set-pin-fahrer" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:border-teal-500 outline-none font-bold tracking-widest">\
+                </div>\
+                <div>\
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Montage PIN</label>\
+                    <input type="text" id="set-pin-montage" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:border-teal-500 outline-none font-bold tracking-widest">\
+                </div>\
+            </div>\
+            <div class="p-5 border-t border-slate-700/50 bg-slate-850/60 flex space-x-3">\
+                <button onclick="closeSettingsModal()" class="flex-1 bg-slate-700 text-white font-bold py-2.5 rounded-xl">Abbrechen</button>\
+                <button onclick="savePins()" class="flex-1 bg-teal-500 text-slate-900 font-bold py-2.5 rounded-xl">Speichern</button>\
+            </div>\
+        </div>\
+    </div>\
+\
+    <!-- NEU: MODAL ZUSTELLUNG ABSCHLIESSEN (FOTO) -->\
+    <div id="modal-complete-delivery" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">\
+        <div class="bg-slate-800 border border-slate-700/80 rounded-2xl w-full max-w-sm overflow-hidden flex flex-col shadow-2xl">\
+            <div class="p-5 border-b border-slate-700/50 flex items-center justify-between">\
+                <h3 class="text-lg font-bold text-white flex items-center space-x-2">\
+                    <i class="fa-solid fa-check-circle text-emerald-400"></i>\
+                    <span>Zustellung abschlie\'dfen</span>\
+                </h3>\
+                <button onclick="closeCompleteDeliveryModal()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button>\
+            </div>\
+            <div class="p-6 space-y-4 text-center">\
+                <p class="text-sm text-slate-300">Du kannst optional ein Beweisfoto der abgestellten Ware machen.</p>\
+                \
+                <div id="photo-preview-container" class="hidden relative w-full h-48 bg-slate-900 rounded-xl overflow-hidden border border-slate-700">\
+                    <img id="delivery-photo-preview" class="w-full h-full object-cover" src="" alt="Vorschau">\
+                    <button onclick="removeDeliveryPhoto()" class="absolute top-2 right-2 bg-rose-500 text-white w-8 h-8 rounded-full shadow-lg flex items-center justify-center"><i class="fa-solid fa-trash"></i></button>\
+                </div>\
+\
+                <label id="photo-upload-label" class="block w-full bg-slate-900 border-2 border-dashed border-slate-600 hover:border-teal-500 text-slate-400 hover:text-teal-400 rounded-xl p-6 cursor-pointer transition">\
+                    <i class="fa-solid fa-camera text-3xl mb-2"></i>\
+                    <p class="text-xs font-bold uppercase tracking-wider mt-2">Foto aufnehmen</p>\
+                    <input type="file" id="delivery-photo-input" accept="image/*" capture="environment" class="hidden" onchange="handleDeliveryPhoto(event)">\
+                </label>\
+            </div>\
+            <div class="p-5 border-t border-slate-700/50 bg-slate-850/60 flex space-x-3">\
+                <button onclick="closeCompleteDeliveryModal()" class="flex-1 bg-slate-700 text-white font-bold py-3 rounded-xl text-sm transition hover:bg-slate-600">Abbrechen</button>\
+                <button onclick="confirmDeliveryComplete()" class="flex-1 bg-emerald-500 text-slate-900 font-bold py-3 rounded-xl text-sm transition hover:bg-emerald-600 shadow-lg shadow-emerald-500/20">Als Geliefert markieren</button>\
+            </div>\
+        </div>\
+    </div>\
+\
+    <!-- MODAL: NEUER / BEARBEITEN AUFTRAG -->\
+    <div id="modal-order" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4 hidden">\
+        <div class="bg-slate-800 border border-slate-700/80 rounded-2xl w-full max-w-lg overflow-hidden flex flex-col shadow-2xl max-h-[90vh]">\
+            <div class="p-5 border-b border-slate-700/50 flex items-center justify-between bg-slate-800/80">\
+                <h3 class="text-lg font-bold text-white flex items-center space-x-2">\
+                    <i class="fa-solid fa-file-circle-plus text-teal-400" id="modal-order-icon"></i>\
+                    <span id="modal-order-title">Lieferschein erfassen</span>\
+                </h3>\
+                <button onclick="closeNewOrderModal()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button>\
+            </div>\
+            <div class="p-6 overflow-y-auto space-y-5 no-scrollbar">\
+                \
+                <div id="pdf-upload-section" class="border-2 border-dashed border-slate-600/60 hover:border-teal-500/80 rounded-xl p-5 text-center bg-slate-900/40 cursor-pointer relative group">\
+                    <input type="file" id="pdf-file-input" accept="application/pdf" class="absolute inset-0 opacity-0 cursor-pointer">\
+                    <div class="space-y-2">\
+                        <div class="text-teal-400 group-hover:scale-110 transition duration-300"><i class="fa-solid fa-file-pdf text-3xl"></i></div>\
+                        <p class="text-sm font-semibold text-slate-200">PDF-Lieferschein hochladen / reinziehen</p>\
+                    </div>\
+                </div>\
+\
+                <div id="pdf-preview-container" class="hidden w-full h-96 border border-slate-700 rounded-xl overflow-hidden relative shadow-inner bg-white">\
+                    <div class="absolute top-2 left-2 bg-slate-900/80 text-white text-[10px] uppercase font-bold px-2 py-1 rounded backdrop-blur">Vorschau</div>\
+                    <iframe id="pdf-preview-iframe" class="w-full h-full border-0"></iframe>\
+                </div>\
+                \
+                <div id="form-status-container" class="hidden pb-2 mb-2 border-b border-slate-700/50">\
+                    <label class="block text-xs font-bold uppercase tracking-wider text-teal-400 mb-1.5">Auftrags-Status anpassen</label>\
+                    <select id="form-status" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white font-bold focus:outline-none focus:border-teal-500">\
+                        <option value="offen">Offen (Nicht gerichtet)</option>\
+                        <option value="in_richtung">In Richtung (Logistiker arbeitet)</option>\
+                        <option value="gerichtet">Gerichtet (Bereit f\'fcr Fahrer)</option>\
+                        <option value="abholbereit_gerichtet">Abholbereit (Kunde kommt)</option>\
+                        <option value="geliefert">Geliefert</option>\
+                        <option value="abgeholt">Abgeholt</option>\
+                        <option value="montage_anfahrt">Montage - Anfahrt</option>\
+                        <option value="montage_aktiv">Montage - Aktiv</option>\
+                        <option value="montage_erledigt">Montage - Erledigt</option>\
+                    </select>\
+                </div>\
+\
+                <div class="space-y-4">\
+                    <div>\
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Kundenname *</label>\
+                        <input type="text" id="form-customerName" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-teal-500">\
+                    </div>\
+\
+                    <div>\
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Stra\'dfe & Hausnummer *</label>\
+                        <input type="text" id="form-street" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-teal-500">\
+                    </div>\
+                    <div class="grid grid-cols-3 gap-4">\
+                        <div class="col-span-1">\
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">PLZ *</label>\
+                            <input type="text" id="form-zip" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-teal-500">\
+                        </div>\
+                        <div class="col-span-2">\
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Ort *</label>\
+                            <input type="text" id="form-city" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-teal-500">\
+                        </div>\
+                    </div>\
+\
+                    <div class="grid grid-cols-2 gap-4">\
+                        <div>\
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Telefon</label>\
+                            <input type="text" id="form-phone" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-teal-500">\
+                        </div>\
+                        <div>\
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Art *</label>\
+                            <select id="form-deliveryType" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-teal-500">\
+                                <option value="delivery">Lieferung (Fahrer)</option>\
+                                <option value="pickup">Abholung (Kunde)</option>\
+                                <option value="montage">Montage (Vor Ort)</option>\
+                            </select>\
+                        </div>\
+                    </div>\
+                    <div class="grid grid-cols-2 gap-4">\
+                        <div>\
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Datum *</label>\
+                            <input type="date" id="form-date" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-teal-500">\
+                        </div>\
+                        <div>\
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Uhrzeit</label>\
+                            <input type="text" id="form-time" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-teal-500">\
+                        </div>\
+                    </div>\
+                    <div>\
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Bezahlstatus / -art</label>\
+                        <select id="form-paymentStatus" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-teal-500">\
+                            <option value="Offen">Bitte w\'e4hlen...</option>\
+                            <option value="\'dcberweisung">\'dcberweisung</option>\
+                            <option value="Bar">Bar</option>\
+                            <option value="Hat bezahlt">Hat bezahlt</option>\
+                            <option value="Muss noch bezahlen">Muss noch bezahlen</option>\
+                        </select>\
+                    </div>\
+                    <div class="pt-2">\
+                        <label class="flex items-center space-x-3 cursor-pointer">\
+                            <input type="checkbox" id="form-isUrgent" class="w-5 h-5 rounded border-slate-700 bg-slate-900 text-purple-600 focus:ring-purple-600 focus:ring-2 accent-purple-600">\
+                            <span class="text-sm font-bold text-purple-400 uppercase tracking-wider"><i class="fa-solid fa-bolt mr-1"></i> Als EXPRESS (H\'f6chste Prio) markieren</span>\
+                        </label>\
+                    </div>\
+                </div>\
+            </div>\
+            <div class="p-5 border-t border-slate-700/50 bg-slate-850/60 flex space-x-3">\
+                <button onclick="closeNewOrderModal()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold py-3 rounded-xl transition">Abbrechen</button>\
+                <button onclick="saveNewOrder()" class="flex-1 bg-teal-500 hover:bg-teal-600 text-slate-900 font-bold py-3 rounded-xl transition">Speichern</button>\
+            </div>\
+        </div>\
+    </div>\
+    \
+    <!-- MODAL: DETAILS -->\
+    <div id="modal-details" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">\
+        <div class="bg-slate-800 border border-slate-700/80 rounded-2xl w-full max-w-md overflow-hidden flex flex-col shadow-2xl">\
+            <div class="p-5 border-b border-slate-700/50 flex items-center justify-between">\
+                <h3 class="text-lg font-bold text-white flex items-center space-x-2">\
+                    <i class="fa-solid fa-file-invoice text-teal-400"></i>\
+                    <span>Auftrags-Details</span>\
+                </h3>\
+                <button onclick="closeDetailsModal()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button>\
+            </div>\
+            <div id="details-content" class="p-6 space-y-6 max-h-[70vh] overflow-y-auto no-scrollbar"></div>\
+            <div class="p-5 border-t border-slate-700/50 bg-slate-850/60 flex items-center space-x-3" id="details-footer"></div>\
+        </div>\
+    </div>\
+\
+    <!-- JAVASCRIPT LOGIC -->\
+    <script type="module">\
+        import \{ initializeApp \} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";\
+        import \{ getAuth, signInAnonymously, onAuthStateChanged \} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";\
+        import \{ getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc \} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";\
+\
+        const defaultFirebaseConfig = \{\
+            apiKey: "AIzaSyDkukzx6w_SmScqFTNAgGGV8SYTgG_wmoI",\
+            authDomain: "saelog-logistik.firebaseapp.com",\
+            projectId: "saelog-logistik",\
+            storageBucket: "saelog-logistik.appspot.com",\
+            messagingSenderId: "432580354649",\
+            appId: "1:432580354649:web:7a63acb76dcf421dd5c748"\
+        \};\
+\
+        let PINS = \{ admin: "4321", logistiker: "2222", fahrer: "3333", montage: "5555" \};\
+\
+        let db = null, auth = null, isFirebaseConnected = false;\
+        let orders = [];\
+        let activeTab = 'logistiker';\
+        let currentUserRole = null;\
+        let currentUserName = "";\
+        let initialLoad = true;\
+        \
+        let leafletMap = null;\
+        let mapLayer = null;\
+        \
+        window.editingOrderId = null;\
+        window.tempPdfBase64 = null;\
+        window.completingOrderId = null; // NEU: F\'fcr das Beweisfoto\
+        window.tempDeliveryPhoto = null; // NEU: Tempor\'e4res Foto\
+        const pendingDeletes = new Set();\
+\
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';\
+\
+        window.addEventListener('DOMContentLoaded', () => \{\
+            document.getElementById('fahrer-date-filter').value = new Date().toISOString().split('T')[0];\
+            document.getElementById('lifo-date-filter').value = new Date().toISOString().split('T')[0];\
+            \
+            const savedPins = localStorage.getItem('saelog_pins');\
+            if (savedPins) \{ try \{ PINS = JSON.parse(savedPins); \} catch(e) \{\} \}\
+            \
+            initApp();\
+            setupRoleCheck();\
+            setupPDFParser();\
+        \});\
+\
+        async function initApp() \{\
+            try \{\
+                const app = initializeApp(defaultFirebaseConfig);\
+                auth = getAuth(app);\
+                db = getFirestore(app);\
+                await signInAnonymously(auth);\
+                onAuthStateChanged(auth, (user) => \{\
+                    if (user) \{\
+                        isFirebaseConnected = true;\
+                        document.getElementById('statusText').innerText = "Live Online";\
+                        listenToDatabase();\
+                        listenToPins(); \
+                    \} else fallbackToLocal();\
+                \});\
+            \} catch (error) \{ fallbackToLocal(); \}\
+        \}\
+\
+        function fallbackToLocal() \{\
+            isFirebaseConnected = false;\
+            document.getElementById('statusText').innerText = "Lokal-Modus";\
+            orders = JSON.parse(localStorage.getItem('saelog_orders') || "[]");\
+            renderAll();\
+        \}\
+\
+        let dbUnsubscribePins = null;\
+        function listenToPins() \{\
+            if (!db) return;\
+            if (dbUnsubscribePins) dbUnsubscribePins();\
+            \
+            dbUnsubscribePins = onSnapshot(doc(db, 'artifacts', 'saelog-logistik', 'public', 'settings', 'pins'), (snap) => \{\
+                if (snap.exists()) \{\
+                    PINS = snap.data();\
+                    localStorage.setItem('saelog_pins', JSON.stringify(PINS));\
+                \} else \{\
+                    setDoc(doc(db, 'artifacts', 'saelog-logistik', 'public', 'settings', 'pins'), PINS);\
+                \}\
+            \});\
+        \}\
+\
+        window.openSettingsModal = function() \{\
+            document.getElementById('set-pin-admin').value = PINS.admin || "";\
+            document.getElementById('set-pin-logistik').value = PINS.logistiker || "";\
+            document.getElementById('set-pin-fahrer').value = PINS.fahrer || "";\
+            document.getElementById('set-pin-montage').value = PINS.montage || "";\
+            document.getElementById('modal-settings').classList.remove('hidden');\
+        \};\
+\
+        window.closeSettingsModal = function() \{ document.getElementById('modal-settings').classList.add('hidden'); \};\
+\
+        window.savePins = async function() \{\
+            const newPins = \{\
+                admin: document.getElementById('set-pin-admin').value.trim(),\
+                logistiker: document.getElementById('set-pin-logistik').value.trim(),\
+                fahrer: document.getElementById('set-pin-fahrer').value.trim(),\
+                montage: document.getElementById('set-pin-montage').value.trim(),\
+            \};\
+            if(!newPins.admin || !newPins.logistiker || !newPins.fahrer || !newPins.montage) return alert("Bitte alle Felder ausf\'fcllen!");\
+\
+            PINS = newPins;\
+            if (isFirebaseConnected && db) await setDoc(doc(db, 'artifacts', 'saelog-logistik', 'public', 'settings', 'pins'), newPins);\
+            else localStorage.setItem('saelog_pins', JSON.stringify(newPins));\
+            \
+            alert("PINs erfolgreich f\'fcr alle Mitarbeiter ge\'e4ndert!");\
+            closeSettingsModal();\
+        \};\
+\
+        let dbUnsubscribeOrders = null;\
+        function listenToDatabase() \{\
+            if (!db) return;\
+            if (dbUnsubscribeOrders) dbUnsubscribeOrders();\
+            \
+            dbUnsubscribeOrders = onSnapshot(collection(db, 'artifacts', 'saelog-logistik', 'public', 'data', 'orders'), (snapshot) => \{\
+                let fetched = [];\
+                snapshot.forEach(doc => fetched.push(\{ id: doc.id, ...doc.data() \}));\
+                orders = fetched.filter(order => !pendingDeletes.has(order.id));\
+                renderAll();\
+                if (initialLoad) initialLoad = false;\
+            \});\
+        \}\
+\
+        let tempSelectedRole = null, pinBuffer = "";\
+        function setupRoleCheck() \{\
+            const savedRole = localStorage.getItem('saelog_user_role');\
+            const savedName = localStorage.getItem('saelog_user_name');\
+            if (savedRole && savedName) applyRole(savedRole, savedName);\
+            else openRoleSelectModal();\
+        \}\
+\
+        window.openRoleSelectModal = function() \{ document.getElementById('modal-role-select').classList.remove('hidden'); \};\
+        window.selectRolePrompt = function(role) \{\
+            tempSelectedRole = role; pinBuffer = "";\
+            document.getElementById('pin-display').value = "";\
+            document.getElementById('pin-employee-name').value = localStorage.getItem('saelog_user_name') || "";\
+            document.getElementById('modal-pin-entry').classList.remove('hidden');\
+        \};\
+        window.closePinModal = function() \{ document.getElementById('modal-pin-entry').classList.add('hidden'); \};\
+        window.pressPin = function(num) \{\
+            if (num === 'clear') pinBuffer = "";\
+            else if (pinBuffer.length < 4) pinBuffer += num;\
+            document.getElementById('pin-display').value = "*".repeat(pinBuffer.length);\
+        \};\
+        \
+        window.submitPin = function() \{\
+            const name = document.getElementById('pin-employee-name').value.trim();\
+            if (!name) return alert("Bitte Namen eingeben.");\
+            if (pinBuffer === PINS[tempSelectedRole]) \{\
+                applyRole(tempSelectedRole, name);\
+                closePinModal(); document.getElementById('modal-role-select').classList.add('hidden');\
+            \} else \{\
+                alert("Falsche PIN!"); pinBuffer = ""; document.getElementById('pin-display').value = "";\
+            \}\
+        \};\
+\
+        function applyRole(role, userName) \{\
+            currentUserRole = role; currentUserName = userName;\
+            localStorage.setItem('saelog_user_role', role);\
+            localStorage.setItem('saelog_user_name', userName);\
+\
+            const labels = \{admin: 'B\'fcro', logistiker: 'Logistik', montage: 'Montage', fahrer: 'Fahrer'\};\
+            document.getElementById('roleHeaderBadge').innerText = `Rolle: $\{labels[role]\} ($\{userName\})`;\
+\
+            const btnSettings = document.getElementById('btn-settings');\
+            if (role === 'admin') \{ btnSettings.classList.remove('hidden'); btnSettings.classList.add('flex'); \} \
+            else \{ btnSettings.classList.add('hidden'); btnSettings.classList.remove('flex'); \}\
+\
+            ['btn-new-order', 'tab-logistiker', 'tab-fahrer', 'tab-montage', 'tab-archiv'].forEach(id => document.getElementById(id)?.classList.remove('hidden'));\
+\
+            if (role === 'fahrer') \{\
+                ['btn-new-order', 'tab-logistiker', 'tab-montage', 'tab-archiv'].forEach(id => document.getElementById(id)?.classList.add('hidden'));\
+                switchTab('fahrer');\
+            \} else if (role === 'logistiker') \{\
+                ['tab-fahrer', 'tab-montage'].forEach(id => document.getElementById(id)?.classList.add('hidden'));\
+                switchTab('logistiker');\
+            \} else if (role === 'montage') \{\
+                ['btn-new-order', 'tab-logistiker', 'tab-fahrer', 'tab-archiv'].forEach(id => document.getElementById(id)?.classList.add('hidden'));\
+                switchTab('montage');\
+            \} else \{\
+                switchTab('logistiker');\
+            \}\
+        \}\
+\
+        window.switchTab = function(tabName) \{\
+            activeTab = tabName;\
+            ['logistiker', 'fahrer', 'montage', 'archiv'].forEach(t => \{\
+                document.getElementById(`page-$\{t\}`).classList.add('hidden');\
+                document.getElementById(`tab-$\{t\}`).classList.remove('text-teal-400', 'font-semibold');\
+                document.getElementById(`tab-$\{t\}`).classList.add('text-slate-400', 'font-medium');\
+            \});\
+            document.getElementById(`page-$\{tabName\}`).classList.remove('hidden');\
+            document.getElementById(`tab-$\{tabName\}`).classList.add('text-teal-400', 'font-semibold');\
+            renderAll();\
+        \};\
+\
+        function renderAll() \{\
+            const badgeFahrer = document.getElementById('badge-fahrer-count');\
+            const fCount = orders.filter(o => o.deliveryType === 'delivery' && ['offen', 'in_richtung', 'gerichtet'].includes(o.status)).length;\
+            if (fCount > 0) \{ badgeFahrer.innerText = fCount; badgeFahrer.classList.remove('hidden'); \} \
+            else badgeFahrer.classList.add('hidden');\
+\
+            if (activeTab === 'logistiker') \{ renderLogistikerLists(); optimizeLogistikPackliste(false); \}\
+            else if (activeTab === 'fahrer') renderFahrerTour();\
+            else if (activeTab === 'montage') renderMontageAppointments();\
+            else if (activeTab === 'archiv') renderArchiv();\
+        \}\
+\
+        function renderLogistikerLists() \{\
+            const listOffen = document.getElementById('list-offen');\
+            const listBereit = document.getElementById('list-bereit');\
+            listOffen.innerHTML = ''; listBereit.innerHTML = '';\
+            document.getElementById('count-offen').innerText = orders.filter(o => o.status === 'offen' || o.status === 'in_richtung').length;\
+            document.getElementById('count-bereit').innerText = orders.filter(o => o.status === 'gerichtet' || o.status === 'abholbereit_gerichtet').length;\
+\
+            const offenItems = orders.filter(o => o.status === 'offen' || o.status === 'in_richtung').sort((a, b) => new Date(a.deliveryDate || '2099-12-31') - new Date(b.deliveryDate || '2099-12-31'));\
+            const bereitItems = orders.filter(o => o.status === 'gerichtet' || o.status === 'abholbereit_gerichtet');\
+            \
+            if (offenItems.length === 0) listOffen.innerHTML = `<div class="col-span-full p-8 text-center bg-slate-800/20 border border-dashed border-slate-700/50 rounded-2xl text-slate-500">Keine offenen Auftr\'e4ge.</div>`;\
+            else \{\
+                offenItems.forEach(order => \{\
+                    const isInProgress = order.status === 'in_richtung';\
+                    let borderColor = isInProgress ? 'border-amber-500/40' : (order.isUrgent ? 'border-purple-500/60' : 'border-slate-700/60');\
+                    let actionBtn = !isInProgress \
+                        ? `<button onclick="updateOrderStatus('$\{order.id\}', 'in_richtung')" class="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs py-2.5 px-3 rounded-lg font-bold w-full">Richten starten</button>`\
+                        : `<button onclick="updateOrderStatus('$\{order.id\}', '$\{order.deliveryType === 'pickup' ? 'abholbereit_gerichtet' : 'gerichtet'\}')" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-slate-900 text-xs py-2.5 px-3 rounded-lg font-bold w-full">Richten fertig</button>`;\
+\
+                    let typeBadge = '';\
+                    if (order.deliveryType === 'pickup') typeBadge = '<span class="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">Abholung</span>';\
+                    else if (order.deliveryType === 'montage') typeBadge = '<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">Montage</span>';\
+                    else typeBadge = '<span class="bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">Lieferung</span>';\
+\
+                    listOffen.innerHTML += `\
+                        <div class="bg-slate-800 border $\{borderColor\} rounded-2xl p-5 transition flex flex-col space-y-4 relative">\
+                            <div>\
+                                <div class="flex justify-between items-start gap-2">\
+                                    <h4 class="font-bold text-white leading-tight">$\{order.customerName\}</h4>\
+                                    $\{typeBadge\}\
+                                </div>\
+                                <p class="text-xs text-slate-400 mt-1"><i class="fa-solid fa-location-dot"></i> $\{order.street || order.address\}</p>\
+                            </div>\
+                            <div class="flex space-x-2 pt-2 border-t border-slate-700/40">\
+                                <button onclick="showOrderDetails('$\{order.id\}')" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs py-2.5 px-4 rounded-lg font-bold">Details</button>\
+                                $\{actionBtn\}\
+                            </div>\
+                        </div>`;\
+                \});\
+            \}\
+\
+            if (bereitItems.length === 0) listBereit.innerHTML = `<div class="col-span-full p-8 text-center bg-slate-800/20 border border-dashed border-slate-700/50 rounded-2xl text-slate-500">Nichts gerichtet.</div>`;\
+            else \{\
+                bereitItems.forEach(order => \{\
+                    let typeBadge = '';\
+                    if (order.deliveryType === 'pickup') typeBadge = '<span class="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">Abholung</span>';\
+                    else if (order.deliveryType === 'montage') typeBadge = '<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">Montage</span>';\
+                    else typeBadge = '<span class="bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">Lieferung</span>';\
+\
+                    listBereit.innerHTML += `\
+                        <div class="bg-slate-800/60 border border-emerald-500/20 rounded-2xl p-5 flex flex-col space-y-4">\
+                            <div>\
+                                <div class="flex justify-between items-start gap-2">\
+                                    <h4 class="font-bold text-slate-300">$\{order.customerName\}</h4>\
+                                    $\{typeBadge\}\
+                                </div>\
+                                <p class="text-xs text-slate-400 mt-1"><i class="fa-solid fa-location-dot"></i> $\{order.street || order.address\}</p>\
+                            </div>\
+                            <div class="flex space-x-2 pt-2 border-t border-slate-700/40">\
+                                <button onclick="showOrderDetails('$\{order.id\}')" class="flex-grow bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs py-2 rounded-lg font-bold">Details</button>\
+                            </div>\
+                        </div>`;\
+                \});\
+            \}\
+        \}\
+\
+        window.optimizeLogistikPackliste = function(optimize = false) \{\
+            const selectedDate = document.getElementById('lifo-date-filter').value;\
+            let lifoList = [...orders].filter(o => o.deliveryDate === selectedDate && (o.status === 'offen' || o.status === 'in_richtung') && o.deliveryType === 'delivery');\
+\
+            if (optimize) \{\
+                lifoList.sort((a, b) => \{\
+                    return (a.routeIndex || 99) - (b.routeIndex || 99);\
+                \}).reverse(); \
+                \
+                lifoList.forEach((o, i) => \{ updateOrder(o.id, \{ lifoIndex: i \}); \});\
+                return; \
+            \}\
+\
+            lifoList.sort((a, b) => (a.lifoIndex || 0) - (b.lifoIndex || 0));\
+            \
+            const container = document.getElementById('logistik-lifo-list');\
+            if (container) \{\
+                if(lifoList.length === 0) \{\
+                    container.innerHTML = `<li class="text-center text-slate-500 text-xs py-4">Keine LIFO-Daten f\'fcr diesen Tag.</li>`;\
+                \} else \{\
+                    container.innerHTML = lifoList.map((o, index) => `\
+                        <li class="bg-slate-800 border border-slate-700 p-3 rounded flex justify-between items-center shadow-sm relative group">\
+                            <div class="absolute left-0 top-0 bottom-0 w-1 bg-teal-500 rounded-l"></div>\
+                            <div class="pl-2 flex-grow">\
+                                <p class="font-bold text-white text-sm">$\{o.customerName\}</p>\
+                                <p class="text-[10px] text-slate-400">$\{o.street || o.address\}</p>\
+                            </div>\
+                            <div class="flex items-center space-x-3">\
+                                <span class="text-xs font-bold text-slate-500 bg-slate-900 px-2 py-1 rounded border border-slate-700">Pos $\{index + 1\}</span> \
+                                <div class="flex flex-col space-y-1">\
+                                    <button onclick="moveLifo('$\{o.id\}', -1)" class="bg-slate-700 hover:bg-teal-500 hover:text-slate-900 text-slate-300 p-1.5 rounded transition $\{index === 0 ? 'opacity-30 cursor-not-allowed' : ''\}" $\{index === 0 ? 'disabled' : ''\}><i class="fa-solid fa-chevron-up text-[10px]"></i></button>\
+                                    <button onclick="moveLifo('$\{o.id\}', 1)" class="bg-slate-700 hover:bg-teal-500 hover:text-slate-900 text-slate-300 p-1.5 rounded transition $\{index === lifoList.length - 1 ? 'opacity-30 cursor-not-allowed' : ''\}" $\{index === lifoList.length - 1 ? 'disabled' : ''\}><i class="fa-solid fa-chevron-down text-[10px]"></i></button>\
+                                </div>\
+                            </div>\
+                        </li>\
+                    `).join('');\
+                \}\
+                document.getElementById('logistik-lifo-container')?.classList.remove('hidden');\
+                document.getElementById('logistik-lifo-container')?.classList.add('flex');\
+            \}\
+        \};\
+\
+        window.moveLifo = function(id, direction) \{\
+            const selectedDate = document.getElementById('lifo-date-filter').value;\
+            let lifoList = [...orders].filter(o => o.deliveryDate === selectedDate && (o.status === 'offen' || o.status === 'in_richtung') && o.deliveryType === 'delivery');\
+            lifoList.sort((a, b) => (a.lifoIndex || 0) - (b.lifoIndex || 0));\
+\
+            let idx = lifoList.findIndex(o => o.id === id);\
+            if (idx < 0) return;\
+            \
+            let swapIdx = idx + direction;\
+            if (swapIdx < 0 || swapIdx >= lifoList.length) return;\
+\
+            lifoList.forEach((o, i) => \{ o.lifoIndex = o.lifoIndex ?? i; \});\
+\
+            let temp = lifoList[idx].lifoIndex;\
+            lifoList[idx].lifoIndex = lifoList[swapIdx].lifoIndex;\
+            lifoList[swapIdx].lifoIndex = temp;\
+\
+            updateOrder(lifoList[idx].id, \{ lifoIndex: lifoList[idx].lifoIndex \});\
+            updateOrder(lifoList[swapIdx].id, \{ lifoIndex: lifoList[swapIdx].lifoIndex \});\
+        \};\
+\
+\
+        window.renderFahrerTour = function() \{\
+            const listTour = document.getElementById('list-fahrer-tour');\
+            const selectedDate = document.getElementById('fahrer-date-filter').value;\
+            listTour.innerHTML = '';\
+            \
+            let tourItems = orders.filter(o => \
+                o.deliveryType === 'delivery' && \
+                o.deliveryDate === selectedDate &&\
+                ['offen', 'in_richtung', 'gerichtet'].includes(o.status)\
+            );\
+            \
+            tourItems.sort((a, b) => (a.routeIndex || 999) - (b.routeIndex || 999));\
+\
+            if (tourItems.length === 0) \{\
+                listTour.innerHTML = `<div class="p-12 text-center text-slate-500">Keine Zustellungen f\'fcr den $\{selectedDate.split('-').reverse().join('.')\} geplant.</div>`;\
+                return;\
+            \}\
+\
+            tourItems.forEach((order, index) => \{\
+                const stopIndex = order.routeIndex || (index + 1);\
+                \
+                let statusWarn = '';\
+                if (order.status !== 'gerichtet') \{\
+                    statusWarn = `<span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] px-2 py-0.5 rounded font-bold uppercase ml-2 animate-pulse inline-block mb-1">Nicht gerichtet!</span>`;\
+                \}\
+\
+                listTour.innerHTML += `\
+                    <div class="bg-slate-800 border border-slate-700/80 rounded-2xl p-5 shadow-lg relative mt-2">\
+                        <div class="absolute top-0 left-0 bg-teal-500 text-slate-900 font-bold px-3 py-1 rounded-br-xl text-xs">Stopp $\{stopIndex\}</div>\
+                        <div class="pt-4 pb-2">\
+                            $\{statusWarn\}\
+                            <h3 class="text-lg font-bold text-white">$\{order.customerName\}</h3>\
+                            <p class="text-sm text-slate-300 mt-1"><i class="fa-solid fa-location-dot text-teal-400 w-5"></i> $\{order.street || order.address\}</p>\
+                        </div>\
+                        <div class="flex gap-2 mt-3 border-t border-slate-700/50 pt-3">\
+                            <button onclick="openSingleRouteInMaps('$\{encodeURIComponent(order.address)\}')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 text-xs shadow-lg transition"><i class="fa-solid fa-location-arrow"></i> \uc0\u55357 \u56525  Route</button>\
+                            <button onclick="showOrderDetails('$\{order.id\}')" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 text-xs transition"><i class="fa-solid fa-info-circle"></i> Info</button>\
+                            \
+                            <!-- NEU: Fertig Button \'f6ffnet nun das Foto Modal -->\
+                            <button onclick="openCompleteDeliveryModal('$\{order.id\}')" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 text-xs shadow-lg transition"><i class="fa-solid fa-check"></i> Fertig</button>\
+                        </div>\
+                    </div>`;\
+            \});\
+        \};\
+\
+        // =========================================================\
+        // NEU: FOTO-UPLOADER F\'dcR ZUSTELLUNG\
+        // =========================================================\
+        window.openCompleteDeliveryModal = function(id) \{\
+            window.completingOrderId = id;\
+            window.tempDeliveryPhoto = null;\
+            document.getElementById('delivery-photo-input').value = "";\
+            document.getElementById('photo-preview-container').classList.add('hidden');\
+            document.getElementById('photo-upload-label').classList.remove('hidden');\
+            document.getElementById('modal-complete-delivery').classList.remove('hidden');\
+        \};\
+\
+        window.closeCompleteDeliveryModal = function() \{\
+            document.getElementById('modal-complete-delivery').classList.add('hidden');\
+        \};\
+\
+        window.handleDeliveryPhoto = function(event) \{\
+            const file = event.target.files[0];\
+            if (!file) return;\
+\
+            const reader = new FileReader();\
+            reader.onload = function(e) \{\
+                const img = new Image();\
+                img.onload = function() \{\
+                    // Komprimieren f\'fcr die Datenbank (Max. 1000px Breite/H\'f6he)\
+                    const canvas = document.createElement('canvas');\
+                    const MAX_WIDTH = 1000;\
+                    const MAX_HEIGHT = 1000;\
+                    let width = img.width;\
+                    let height = img.height;\
+\
+                    if (width > height) \{\
+                        if (width > MAX_WIDTH) \{ height *= MAX_WIDTH / width; width = MAX_WIDTH; \}\
+                    \} else \{\
+                        if (height > MAX_HEIGHT) \{ width *= MAX_HEIGHT / height; height = MAX_HEIGHT; \}\
+                    \}\
+                    \
+                    canvas.width = width;\
+                    canvas.height = height;\
+                    const ctx = canvas.getContext('2d');\
+                    ctx.drawImage(img, 0, 0, width, height);\
+                    \
+                    // Speichere als JPEG (0.6 Qualit\'e4t = Gute Kompression)\
+                    window.tempDeliveryPhoto = canvas.toDataURL('image/jpeg', 0.6); \
+                    \
+                    document.getElementById('delivery-photo-preview').src = window.tempDeliveryPhoto;\
+                    document.getElementById('photo-preview-container').classList.remove('hidden');\
+                    document.getElementById('photo-upload-label').classList.add('hidden');\
+                \};\
+                img.src = e.target.result;\
+            \};\
+            reader.readAsDataURL(file);\
+        \};\
+\
+        window.removeDeliveryPhoto = function() \{\
+            window.tempDeliveryPhoto = null;\
+            document.getElementById('delivery-photo-input').value = "";\
+            document.getElementById('photo-preview-container').classList.add('hidden');\
+            document.getElementById('photo-upload-label').classList.remove('hidden');\
+        \};\
+\
+        window.confirmDeliveryComplete = function() \{\
+            if (!window.completingOrderId) return;\
+            \
+            let payload = \{ status: 'geliefert' \};\
+            if (window.tempDeliveryPhoto) \{\
+                payload.deliveryPhotoBase64 = window.tempDeliveryPhoto;\
+            \}\
+\
+            updateOrder(window.completingOrderId, payload);\
+            closeCompleteDeliveryModal();\
+        \};\
+        // =========================================================\
+\
+        window.openFullRouteInMaps = function() \{\
+            const selectedDate = document.getElementById('fahrer-date-filter').value;\
+            let tourItems = orders.filter(o => o.deliveryType === 'delivery' && o.deliveryDate === selectedDate && ['offen', 'in_richtung', 'gerichtet'].includes(o.status));\
+            tourItems.sort((a, b) => (a.routeIndex || 999) - (b.routeIndex || 999));\
+            if (tourItems.length === 0) return alert("Keine Lieferungen vorhanden, um eine Route zu erstellen.");\
+\
+            let mapsUrl = "https://www.google.com/maps/dir/Auf+dem+Wilcher+7,+66916+Breitenbach/";\
+            tourItems.forEach(item => \{ mapsUrl += encodeURIComponent(item.address) + "/"; \});\
+            window.open(mapsUrl, '_blank');\
+        \};\
+\
+        window.openSingleRouteInMaps = function(encodedAddress) \{\
+            window.open(`https://www.google.com/maps/dir/?api=1&destination=$\{encodedAddress\}`, '_blank');\
+        \};\
+\
+        window.toggleMap = function() \{\
+            const mapContainer = document.getElementById('map-container');\
+            const btnText = document.getElementById('btn-map-text');\
+            if (mapContainer) \{\
+                mapContainer.classList.toggle('hidden');\
+                btnText.innerText = mapContainer.classList.contains('hidden') ? "Karte anzeigen" : "Karte ausblenden";\
+                if (!mapContainer.classList.contains('hidden') && leafletMap) \{\
+                    setTimeout(() => leafletMap.invalidateSize(), 200);\
+                \}\
+            \}\
+        \};\
+\
+        window.optimizeRoute = async function() \{\
+            const btn = document.getElementById('btn-optimize');\
+            const originalHTML = btn.innerHTML;\
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-sm"></i><span>Berechne...</span>`;\
+            btn.classList.add('opacity-80', 'cursor-not-allowed');\
+            btn.disabled = true;\
+\
+            const selectedDate = document.getElementById('fahrer-date-filter').value;\
+            const startAddress = "Auf dem Wilcher 7, 66916 Breitenbach, Deutschland";\
+            let tourItems = orders.filter(o => o.deliveryType === 'delivery' && o.deliveryDate === selectedDate && ['offen', 'in_richtung', 'gerichtet'].includes(o.status));\
+            \
+            if (tourItems.length === 0) \{\
+                alert("Keine Lieferungen f\'fcr diesen Tag gefunden.");\
+                btn.innerHTML = originalHTML; btn.classList.remove('opacity-80', 'cursor-not-allowed'); btn.disabled = false;\
+                return;\
+            \}\
+\
+            async function getCoords(addressStr) \{\
+                try \{\
+                    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=$\{encodeURIComponent(addressStr)\}&limit=1`);\
+                    const data = await res.json();\
+                    if (data && data.length > 0) return \{ lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) \};\
+                \} catch(e) \{\}\
+                return null;\
+            \}\
+\
+            let startCoords = await getCoords(startAddress);\
+            if (!startCoords) \{\
+                alert("Startadresse konnte nicht auf Karte gefunden werden.");\
+                btn.innerHTML = originalHTML; btn.classList.remove('opacity-80', 'cursor-not-allowed'); btn.disabled = false;\
+                return;\
+            \}\
+\
+            let coordsList = [];\
+            for (let order of tourItems) \{\
+                let coords = await getCoords(order.address);\
+                if (coords) coordsList.push(\{ ...order, coords \});\
+                else coordsList.push(\{ ...order, coords: null \}); \
+                await new Promise(resolve => setTimeout(resolve, 600)); \
+            \}\
+\
+            function getDistance(lat1, lon1, lat2, lon2) \{\
+                const R = 6371; \
+                const dLat = (lat2 - lat1) * Math.PI / 180;\
+                const dLon = (lon2 - lon1) * Math.PI / 180;\
+                const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * Math.sin(dLon/2) * Math.sin(dLon/2);\
+                return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));\
+            \}\
+\
+            let unvisited = coordsList.filter(o => o.coords !== null);\
+            let unroutable = coordsList.filter(o => o.coords === null); \
+            \
+            let currentLoc = startCoords;\
+            let currentRouteIndex = 1;\
+            let pathForMap = [startCoords];\
+\
+            while (unvisited.length > 0) \{\
+                let closestIdx = 0;\
+                let minDistance = Infinity;\
+                for (let i = 0; i < unvisited.length; i++) \{\
+                    let dist = getDistance(currentLoc.lat, currentLoc.lon, unvisited[i].coords.lat, unvisited[i].coords.lon);\
+                    if (dist < minDistance) \{ minDistance = dist; closestIdx = i; \}\
+                \}\
+                let nextStop = unvisited.splice(closestIdx, 1)[0];\
+                updateOrder(nextStop.id, \{ routeIndex: currentRouteIndex++ \});\
+                pathForMap.push(nextStop.coords);\
+                currentLoc = nextStop.coords; \
+            \}\
+\
+            for (let fail of unroutable) \{\
+                updateOrder(fail.id, \{ routeIndex: currentRouteIndex++ \});\
+            \}\
+\
+            btn.innerHTML = originalHTML;\
+            btn.classList.remove('opacity-80', 'cursor-not-allowed');\
+            btn.disabled = false;\
+            \
+            drawMapRoute(pathForMap);\
+            if (unroutable.length > 0) alert(`Route optimiert!\\nHinweis: $\{unroutable.length\} Adresse(n) wurden nicht auf der Karte gefunden und ans Ende gestellt.`);\
+        \};\
+\
+        window.drawMapRoute = function(pathPoints) \{\
+            const container = document.getElementById('map-container');\
+            if (container.classList.contains('hidden')) toggleMap(); \
+            \
+            if (!leafletMap) \{\
+                leafletMap = L.map('route-map').setView([49.444, 7.333], 10);\
+                L.tileLayer('https://\{s\}.basemaps.cartocdn.com/rastertiles/voyager/\{z\}/\{x\}/\{y\}\{r\}.png', \{ attribution: '&copy; OpenStreetMap' \}).addTo(leafletMap);\
+            \}\
+            \
+            if (mapLayer) leafletMap.removeLayer(mapLayer);\
+            mapLayer = L.featureGroup().addTo(leafletMap);\
+\
+            if (!pathPoints || pathPoints.length === 0) return;\
+\
+            L.marker([pathPoints[0].lat, pathPoints[0].lon], \{\
+                icon: L.divIcon(\{className: 'start-marker w-4 h-4', iconSize: [16,16]\})\
+            \}).bindPopup('<b>Lager:</b><br>Breitenbach').addTo(mapLayer);\
+\
+            let latlngs = [[pathPoints[0].lat, pathPoints[0].lon]];\
+\
+            for (let i = 1; i < pathPoints.length; i++) \{\
+                L.marker([pathPoints[i].lat, pathPoints[i].lon], \{\
+                    icon: L.divIcon(\{ className: 'custom-map-marker', html: `<span>$\{i\}</span>`, iconSize: [24,24] \})\
+                \}).addTo(mapLayer);\
+                latlngs.push([pathPoints[i].lat, pathPoints[i].lon]);\
+            \}\
+\
+            L.polyline(latlngs, \{color: '#14b8a6', weight: 4, opacity: 0.7, dashArray: '8, 8'\}).addTo(mapLayer);\
+            setTimeout(() => \{ leafletMap.invalidateSize(); leafletMap.fitBounds(mapLayer.getBounds(), \{padding: [40, 40]\}); \}, 300);\
+        \};\
+\
+        function renderMontageAppointments() \{ /* ... */ \}\
+        function renderArchiv() \{ /* ... */ \}\
+        \
+        window.openNewOrderModal = function() \{\
+            window.editingOrderId = null; \
+            window.tempPdfBase64 = null;\
+            document.getElementById('modal-order-icon').className = "fa-solid fa-file-circle-plus text-teal-400";\
+            document.getElementById('modal-order-title').innerText = "Lieferschein erfassen";\
+            document.getElementById('form-status-container').classList.add('hidden'); \
+            \
+            document.getElementById('pdf-upload-section').classList.remove('hidden');\
+            document.getElementById('pdf-preview-container').classList.add('hidden');\
+            document.getElementById('pdf-preview-iframe').src = "";\
+\
+            ['customerName', 'street', 'zip', 'city', 'phone', 'time'].forEach(id => document.getElementById(`form-$\{id\}`).value = '');\
+            document.getElementById('form-date').value = new Date().toISOString().split('T')[0];\
+            document.getElementById('form-paymentStatus').value = 'Offen';\
+            document.getElementById('form-isUrgent').checked = false; \
+            document.getElementById('modal-order').classList.remove('hidden');\
+        \};\
+\
+        window.editOrder = function(id) \{\
+            const order = orders.find(o => o.id === id);\
+            if (!order) return;\
+            window.editingOrderId = id;\
+            window.tempPdfBase64 = null; \
+            document.getElementById('modal-order-icon').className = "fa-solid fa-pen-to-square text-blue-400";\
+            document.getElementById('modal-order-title').innerText = "Auftrag bearbeiten";\
+            document.getElementById('form-status-container').classList.remove('hidden');\
+            \
+            if (order.pdfBase64) \{\
+                try \{\
+                    const arr = order.pdfBase64.split(','); const bstr = atob(arr[1] || arr[0]); let n = bstr.length;\
+                    const u8arr = new Uint8Array(n); while(n--) u8arr[n] = bstr.charCodeAt(n);\
+                    const blob = new Blob([u8arr], \{type: 'application/pdf'\}); \
+                    document.getElementById('pdf-preview-iframe').src = URL.createObjectURL(blob);\
+                    document.getElementById('pdf-preview-container').classList.remove('hidden');\
+                \} catch(e) \{\
+                    document.getElementById('pdf-preview-container').classList.add('hidden');\
+                \}\
+            \} else \{\
+                document.getElementById('pdf-preview-iframe').src = "";\
+                document.getElementById('pdf-preview-container').classList.add('hidden');\
+            \}\
+\
+            document.getElementById('form-status').value = order.status || 'offen';\
+            document.getElementById('form-customerName').value = order.customerName || '';\
+            document.getElementById('form-street').value = order.street || (order.address ? order.address.split(',')[0] : '');\
+            document.getElementById('form-zip').value = order.zip || '';\
+            document.getElementById('form-city').value = order.city || '';\
+            document.getElementById('form-phone').value = order.phone || '';\
+            document.getElementById('form-deliveryType').value = order.deliveryType || 'delivery';\
+            document.getElementById('form-date').value = order.deliveryDate || '';\
+            document.getElementById('form-time').value = order.deliveryTime || '';\
+            document.getElementById('form-paymentStatus').value = order.paymentMethod || 'Offen';\
+            document.getElementById('form-isUrgent').checked = !!order.isUrgent;\
+            \
+            closeDetailsModal();\
+            document.getElementById('modal-order').classList.remove('hidden');\
+        \};\
+        \
+        window.closeNewOrderModal = function() \{ \
+            document.getElementById('modal-order').classList.add('hidden');\
+            document.getElementById('pdf-preview-iframe').src = ""; \
+        \};\
+\
+        window.saveNewOrder = async function() \{\
+            const street = document.getElementById('form-street').value.trim();\
+            const zip = document.getElementById('form-zip').value.trim();\
+            const city = document.getElementById('form-city').value.trim();\
+\
+            const p = \{\
+                customerName: document.getElementById('form-customerName').value.trim(),\
+                street: street,\
+                zip: zip,\
+                city: city,\
+                address: `$\{street\}, $\{zip\} $\{city\}`,\
+                phone: document.getElementById('form-phone').value.trim(),\
+                deliveryType: document.getElementById('form-deliveryType').value,\
+                deliveryDate: document.getElementById('form-date').value,\
+                deliveryTime: document.getElementById('form-time').value.trim(),\
+                paymentMethod: document.getElementById('form-paymentStatus').value,\
+                isUrgent: document.getElementById('form-isUrgent').checked\
+            \};\
+\
+            if(!p.customerName || !street || !zip || !city) return alert("Name und komplette Adresse (Stra\'dfe, PLZ, Ort) sind Pflichtfelder!");\
+            \
+            if (window.tempPdfBase64) p.pdfBase64 = window.tempPdfBase64;\
+\
+            if(window.editingOrderId) \{\
+                p.status = document.getElementById('form-status').value;\
+                await updateOrder(window.editingOrderId, p);\
+            \}\
+            else \{\
+                p.status = 'offen'; \
+                p.createdBy = currentUserName; \
+                if (!p.pdfBase64) p.pdfBase64 = window.tempPdfBase64; \
+                if (isFirebaseConnected && db) await addDoc(collection(db, 'artifacts', 'saelog-logistik', 'public', 'data', 'orders'), p);\
+                else \{ p.id = "local-"+Date.now(); orders.push(p); localStorage.setItem('saelog_orders', JSON.stringify(orders)); renderAll(); \}\
+            \}\
+            closeNewOrderModal();\
+        \};\
+\
+        async function updateOrder(id, payload) \{\
+            if (isFirebaseConnected && db) await updateDoc(doc(db, 'artifacts', 'saelog-logistik', 'public', 'data', 'orders', id), payload);\
+            else \{\
+                const order = orders.find(o => o.id === id);\
+                if(order) \{ Object.assign(order, payload); localStorage.setItem('saelog_orders', JSON.stringify(orders)); renderAll(); \}\
+            \}\
+        \}\
+\
+        window.updateOrderStatus = function(id, status) \{ updateOrder(id, \{ status: status \}); \};\
+\
+        window.showOrderDetails = function(id) \{\
+            const order = orders.find(o => o.id === id);\
+            if (!order) return;\
+\
+            const content = document.getElementById('details-content');\
+            const footer = document.getElementById('details-footer');\
+\
+            let typeBadge = '';\
+            if (order.deliveryType === 'pickup') typeBadge = '<span class="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs px-2.5 py-1 rounded-full font-bold uppercase tracking-wider">Abholung</span>';\
+            else if (order.deliveryType === 'montage') typeBadge = '<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs px-2.5 py-1 rounded-full font-bold uppercase tracking-wider">Montage</span>';\
+            else typeBadge = '<span class="bg-blue-500/10 text-blue-400 border border-blue-500/20 text-xs px-2.5 py-1 rounded-full font-bold uppercase tracking-wider">Zustellung</span>';\
+\
+            const expressBadge = order.isUrgent ? `<span class="bg-purple-500/20 text-purple-400 text-xs px-2.5 py-1 rounded-full font-bold uppercase border border-purple-500/30 ml-2 shadow-[0_0_10px_rgba(168,85,247,0.3)]"><i class="fa-solid fa-bolt text-yellow-300 mr-1"></i> Express</span>` : '';\
+\
+            let pdfHtml = order.pdfBase64 \
+                ? `<button onclick="viewPDFData('$\{order.id\}')" class="w-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold py-3 rounded-xl border border-rose-500/20 text-sm mt-3"><i class="fa-solid fa-file-pdf"></i> PDF Lieferschein ansehen</button>` \
+                : `<div class="bg-slate-900/40 p-4 rounded-xl border border-dashed border-slate-700/60 text-center text-xs mt-3">Kein PDF hinterlegt.</div>`;\
+\
+            // NEU: Anzeige des Beweisfotos, falls vorhanden\
+            let photoHtml = order.deliveryPhotoBase64 \
+                ? `<div class="mt-4"><label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2"><i class="fa-solid fa-camera text-emerald-400 mr-1"></i> Beweis-Foto Zustellung</label>\
+                   <img src="$\{order.deliveryPhotoBase64\}" class="w-full h-48 object-cover rounded-xl border border-slate-700 shadow-lg cursor-pointer" onclick="window.open(this.src, '_blank')" alt="Beweisfoto"></div>`\
+                : '';\
+\
+            content.innerHTML = `\
+                <div class="flex items-start justify-between"><div><span class="text-[10px] font-bold text-slate-400 uppercase">Kunde</span><h4 class="text-xl font-bold text-white flex items-center">$\{order.customerName\}</h4></div>$\{typeBadge\}</div>\
+                $\{expressBadge ? `<div class="mt-2">$\{expressBadge\}</div>` : ''\}\
+                \
+                <div class="space-y-2 bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 text-sm text-slate-300 mt-4 relative shadow-inner">\
+                    <button onclick="openSingleRouteInMaps('$\{encodeURIComponent(order.address)\}')" class="absolute top-4 right-4 bg-blue-500/20 text-blue-400 hover:bg-blue-500/40 hover:text-white p-2.5 rounded-xl transition border border-blue-500/30 shadow-lg" title="In Google Maps navigieren">\
+                        <i class="fa-solid fa-map-location-dot text-lg"></i>\
+                    </button>\
+                    \
+                    <p class="pr-12"><i class="fa-solid fa-location-dot text-teal-400 w-5"></i> $\{order.address\}</p>\
+                    <p><i class="fa-solid fa-clock text-teal-400 w-5"></i> $\{order.deliveryDate || ''\} $\{order.deliveryTime || ''\}</p>\
+                    <p><i class="fa-solid fa-phone text-teal-400 w-5"></i> $\{order.phone || 'Keine Nummer'\}</p>\
+                    <p><i class="fa-solid fa-money-bill-wave text-teal-400 w-5"></i> Bezahlung: <span class="font-bold text-white">$\{order.paymentMethod && order.paymentMethod !== 'Offen' ? order.paymentMethod : 'Keine Angabe'\}</span></p>\
+                    <p><i class="fa-solid fa-signal text-teal-400 w-5"></i> <span class="uppercase text-teal-300 font-bold">$\{order.status.replace('_',' ')\}</span></p>\
+                </div>\
+                $\{photoHtml\}\
+                $\{pdfHtml\}\
+            `;\
+\
+            const adminBtns = (currentUserRole === 'admin') ? `\
+                <div class="flex space-x-1.5">\
+                    <button onclick="editOrder('$\{order.id\}')" class="bg-blue-500/10 text-blue-400 p-3 rounded-xl border border-blue-500/10 hover:bg-blue-500/20 transition" title="Bearbeiten"><i class="fa-solid fa-pen"></i></button>\
+                    <button onclick="deleteOrder('$\{order.id\}')" class="bg-rose-500/10 text-rose-400 p-3 rounded-xl border border-rose-500/10 hover:bg-rose-500/20 transition" title="L\'f6schen"><i class="fa-solid fa-trash-can"></i></button>\
+                </div>` : '';\
+\
+            footer.innerHTML = `$\{adminBtns\}<button onclick="closeDetailsModal()" class="flex-grow bg-slate-700 text-slate-200 font-bold py-3 rounded-xl">Schlie\'dfen</button>`;\
+            document.getElementById('modal-details').classList.remove('hidden');\
+        \};\
+\
+        window.closeDetailsModal = function() \{ document.getElementById('modal-details').classList.add('hidden'); \};\
+        \
+        window.deleteOrder = function(id) \{\
+            if(confirm("Diesen Auftrag endg\'fcltig l\'f6schen?")) \{\
+                pendingDeletes.add(id); orders = orders.filter(o => o.id !== id); renderAll(); closeDetailsModal();\
+                if (isFirebaseConnected && db) \{ deleteDoc(doc(db, 'artifacts', 'saelog-logistik', 'public', 'data', 'orders', id)); setTimeout(() => pendingDeletes.delete(id), 2500); \} \
+                else \{ localStorage.setItem('saelog_orders', JSON.stringify(orders)); pendingDeletes.delete(id); \}\
+            \}\
+        \};\
+\
+        window.viewPDFData = function(id) \{\
+            const order = orders.find(o => o.id === id);\
+            if (!order || !order.pdfBase64) return;\
+            try \{\
+                const arr = order.pdfBase64.split(','); const bstr = atob(arr[1] || arr[0]); let n = bstr.length;\
+                const u8arr = new Uint8Array(n); while(n--) u8arr[n] = bstr.charCodeAt(n);\
+                const blob = new Blob([u8arr], \{type: 'application/pdf'\}); window.open(URL.createObjectURL(blob), '_blank');\
+            \} catch(e) \{ alert("PDF konnte nicht ge\'f6ffnet werden."); \}\
+        \};\
+\
+        function setupPDFParser() \{\
+            document.getElementById('pdf-file-input').addEventListener('change', async (e) => \{\
+                const file = e.target.files[0]; \
+                if (!file) return;\
+                \
+                const fileUrl = URL.createObjectURL(file);\
+                document.getElementById('pdf-preview-iframe').src = fileUrl;\
+                document.getElementById('pdf-preview-container').classList.remove('hidden');\
+\
+                const r1 = new FileReader(); \
+                r1.onload = (ev) => \{ window.tempPdfBase64 = ev.target.result; \}; \
+                r1.readAsDataURL(file);\
+                \
+                const r2 = new FileReader();\
+                r2.onload = async (ev) => \{\
+                    const pdf = await pdfjsLib.getDocument(new Uint8Array(ev.target.result)).promise;\
+                    let txt = ""; \
+                    for(let i=1; i<=pdf.numPages; i++) \{ \
+                        const page = await pdf.getPage(i); \
+                        const content = await page.getTextContent(); \
+                        txt += content.items.map(it => it.str).join(" ") + " \\n"; \
+                    \}\
+                    if(txt.toLowerCase().includes("abholung")) document.getElementById('form-deliveryType').value = "pickup";\
+                    else if(txt.toLowerCase().includes("montage")) document.getElementById('form-deliveryType').value = "montage";\
+                    \
+                    const pMatch = txt.match(/(?:tel|mobil)[\\s.:]*([+\\d\\s\\-/()]\{6,20\})/i);\
+                    if(pMatch) document.getElementById('form-phone').value = pMatch[1].trim();\
+                \};\
+                r2.readAsArrayBuffer(file);\
+            \});\
+        \}\
+    </script>\
+</body>\
+</html>}
