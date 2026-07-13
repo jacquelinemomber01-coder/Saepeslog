@@ -307,12 +307,12 @@
         </div>
     </div>
 
-    <!-- MODAL: NEUER AUFTRAG -->
+    <!-- MODAL: NEUER / BEARBEITEN AUFTRAG -->
     <div id="modal-order" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-slate-800 border border-slate-700/80 rounded-2xl w-full max-w-lg overflow-hidden flex flex-col shadow-2xl max-h-[90vh]">
             <div class="p-5 border-b border-slate-700/50 flex items-center justify-between bg-slate-800/80">
                 <h3 class="text-lg font-bold text-white flex items-center space-x-2">
-                    <i class="fa-solid fa-file-circle-plus text-teal-400"></i>
+                    <i class="fa-solid fa-file-circle-plus text-teal-400" id="modal-order-icon"></i>
                     <span id="modal-order-title">Lieferschein erfassen</span>
                 </h3>
                 <button onclick="closeNewOrderModal()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
@@ -325,6 +325,23 @@
                         <p class="text-sm font-semibold text-slate-200">PDF-Lieferschein hochladen / reinziehen</p>
                     </div>
                 </div>
+                
+                <!-- STATUS DROPDOWN (nur beim Bearbeiten sichtbar) -->
+                <div id="form-status-container" class="hidden pb-2 mb-2 border-b border-slate-700/50">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-teal-400 mb-1.5">Auftrags-Status anpassen</label>
+                    <select id="form-status" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white font-bold focus:outline-none focus:border-teal-500">
+                        <option value="offen">Offen</option>
+                        <option value="in_richtung">In Richtung</option>
+                        <option value="gerichtet">Gerichtet (Fahrer)</option>
+                        <option value="abholbereit_gerichtet">Abholbereit (Kunde)</option>
+                        <option value="geliefert">Geliefert</option>
+                        <option value="abgeholt">Abgeholt</option>
+                        <option value="montage_anfahrt">Montage - Anfahrt</option>
+                        <option value="montage_aktiv">Montage - Aktiv</option>
+                        <option value="montage_erledigt">Montage - Erledigt</option>
+                    </select>
+                </div>
+
                 <div class="space-y-4">
                     <div>
                         <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Kundenname *</label>
@@ -368,7 +385,7 @@
                             <option value="Muss noch bezahlen">Muss noch bezahlen</option>
                         </select>
                     </div>
-                    <!-- NEU: EXPRESS Checkbox -->
+                    <!-- EXPRESS Checkbox -->
                     <div class="pt-2">
                         <label class="flex items-center space-x-3 cursor-pointer">
                             <input type="checkbox" id="form-isUrgent" class="w-5 h-5 rounded border-slate-700 bg-slate-900 text-purple-600 focus:ring-purple-600 focus:ring-2 accent-purple-600">
@@ -405,22 +422,7 @@
         <img id="lightbox-img" src="" class="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl" onclick="event.stopPropagation()">
     </div>
 
-    <!-- MODAL: CONFIRM -->
-    <div id="modal-confirm" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4 hidden">
-        <div class="bg-slate-800 border border-slate-700/80 rounded-2xl w-full max-w-sm overflow-hidden flex flex-col shadow-2xl text-center">
-            <div class="p-6 space-y-4">
-                <div class="w-12 h-12 rounded-full bg-rose-500/10 text-rose-400 flex items-center justify-center mx-auto text-xl"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                <h4 class="text-lg font-bold text-white" id="confirm-title"></h4>
-                <p class="text-sm text-slate-400" id="confirm-msg"></p>
-            </div>
-            <div class="p-4 border-t border-slate-700/50 flex space-x-3">
-                <button id="confirm-cancel-btn" class="flex-1 bg-slate-700 text-slate-200 font-bold py-2.5 rounded-xl">Abbrechen</button>
-                <button id="confirm-ok-btn" class="flex-1 bg-rose-500 text-white font-bold py-2.5 rounded-xl">OK</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- JAVASCRIPT LOGIC (VOLLSTÄNDIG) -->
+    <!-- JAVASCRIPT LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -489,14 +491,10 @@
             dbUnsubscribeOrders = onSnapshot(collection(db, 'artifacts', 'saelog-logistik', 'public', 'data', 'orders'), (snapshot) => {
                 let fetched = [];
                 
-                // Prüfen, ob NEUE eilige Aufträge dabei sind (für Push-Benachrichtigung)
                 snapshot.docChanges().forEach((change) => {
                     if (change.type === "added") {
                         const data = change.doc.data();
-                        // Nur benachrichtigen, wenn nicht mehr der erste Seiten-Ladevorgang und Auftrag eilt (Express)
-                        if (!initialLoad && data.isUrgent) {
-                            sendUrgentNotification(data.customerName);
-                        }
+                        if (!initialLoad && data.isUrgent) sendUrgentNotification(data.customerName);
                     }
                 });
 
@@ -508,7 +506,6 @@
             });
         }
 
-        // --- BENACHRICHTIGUNGEN (NATIVE BROWSER NOTIFICATIONS) ---
         function requestNotificationPermission() {
             if ("Notification" in window) {
                 if (Notification.permission !== "denied" && Notification.permission !== "granted") {
@@ -521,11 +518,10 @@
             if ("Notification" in window && Notification.permission === "granted") {
                 new Notification("🚨 EXPRESS AUFTRAG 🚨", {
                     body: `Neuer EXPRESS Lieferschein für ${customerName} eingetroffen!`,
-                    icon: "https://cdn-icons-png.flaticon.com/512/732/732205.png" // Optional icon
+                    icon: "https://cdn-icons-png.flaticon.com/512/732/732205.png"
                 });
             }
         }
-        // ---------------------------------------------------------
 
         let tempSelectedRole = null, pinBuffer = "";
         function setupRoleCheck() {
@@ -564,7 +560,6 @@
             localStorage.setItem('saelog_user_role', role);
             localStorage.setItem('saelog_user_name', userName);
 
-            // Benachrichtigungs-Rechte anfragen
             requestNotificationPermission();
 
             const labels = {admin: 'Büro', logistiker: 'Logistik', montage: 'Montage', fahrer: 'Fahrer'};
@@ -632,12 +627,11 @@
                 offenItems.forEach(order => {
                     const isInProgress = order.status === 'in_richtung';
                     
-                    // Unterscheidung der Dringlichkeit:
-                    const isExpress = order.isUrgent; // Manuell Haken gesetzt -> Lila/Blitz
-                    const isDateUrgent = !isExpress && (order.deliveryDate && order.deliveryDate <= today); // Datum heute -> Rot/Eilt
+                    const isExpress = order.isUrgent; 
+                    const isDateUrgent = !isExpress && (order.deliveryDate && order.deliveryDate <= today); 
                     
                     let urgentBadge = '';
-                    let borderColor = 'border-slate-700/60'; // Standard
+                    let borderColor = 'border-slate-700/60'; 
                     
                     if (isInProgress) {
                         borderColor = 'border-amber-500/40';
@@ -687,12 +681,10 @@
             }
         }
 
-        // LIFO LOGIC ANGEPASST FÜR MANUELLE SORTIERUNG
         window.optimizeLogistikPackliste = function(optimize = false) {
             let lifoList = [...orders].filter(o => (o.status === 'offen' || o.status === 'in_richtung') && o.deliveryType === 'delivery');
 
             if (optimize) {
-                // Automatisch sortieren & neue Indizes setzen (Letzter Stopp zuerst = Stirnwand)
                 lifoList.sort((a, b) => {
                     const dateA = new Date(a.deliveryDate || '2099-12-31').getTime();
                     const dateB = new Date(b.deliveryDate || '2099-12-31').getTime();
@@ -703,10 +695,9 @@
                 lifoList.forEach((o, i) => {
                     updateOrder(o.id, { lifoIndex: i });
                 });
-                return; // Re-render wird durch DB Snapshot getriggert
+                return; 
             }
 
-            // Normales rendern nach gespeichertem lifoIndex
             lifoList.sort((a, b) => (a.lifoIndex || 0) - (b.lifoIndex || 0));
             
             const container = document.getElementById('logistik-lifo-list');
@@ -742,10 +733,8 @@
             let swapIdx = idx + direction;
             if (swapIdx < 0 || swapIdx >= lifoList.length) return;
 
-            // Falls noch keine Indizes gesetzt waren, zur Sicherheit nachziehen
             lifoList.forEach((o, i) => { o.lifoIndex = o.lifoIndex ?? i; });
 
-            // Indizes tauschen
             let temp = lifoList[idx].lifoIndex;
             lifoList[idx].lifoIndex = lifoList[swapIdx].lifoIndex;
             lifoList[swapIdx].lifoIndex = temp;
@@ -876,14 +865,50 @@
             }
         };
 
+        // --- NEUES & BEARBEITEN MODAL LOGIK ---
+        
         window.openNewOrderModal = function() {
-            window.editingOrderId = null; window.tempPdfBase64 = null;
-            document.getElementById('modal-order-title').innerText = "Neuen Lieferschein erfassen";
+            window.editingOrderId = null; 
+            window.tempPdfBase64 = null;
+            
+            document.getElementById('modal-order-icon').className = "fa-solid fa-file-circle-plus text-teal-400";
+            document.getElementById('modal-order-title').innerText = "Lieferschein erfassen";
+            
+            document.getElementById('form-status-container').classList.add('hidden'); // Status ausblenden beim NEU erstellen
             document.getElementById('pdf-upload-section').classList.remove('hidden');
+            
             ['customerName', 'address', 'phone', 'time'].forEach(id => document.getElementById(`form-${id}`).value = '');
             document.getElementById('form-date').value = new Date().toISOString().split('T')[0];
             document.getElementById('form-paymentStatus').value = 'Offen';
-            document.getElementById('form-isUrgent').checked = false; // Reset Checkbox
+            document.getElementById('form-isUrgent').checked = false; 
+            
+            document.getElementById('modal-order').classList.remove('hidden');
+        };
+
+        window.editOrder = function(id) {
+            const order = orders.find(o => o.id === id);
+            if (!order) return;
+            
+            window.editingOrderId = id;
+            window.tempPdfBase64 = null; // Zurücksetzen. Existierendes PDF bleibt in Firebase, außer wir überschreiben es.
+            
+            document.getElementById('modal-order-icon').className = "fa-solid fa-pen-to-square text-blue-400";
+            document.getElementById('modal-order-title').innerText = "Auftrag bearbeiten";
+            
+            // Status anzeigen & füllen
+            document.getElementById('form-status-container').classList.remove('hidden');
+            document.getElementById('form-status').value = order.status || 'offen';
+            
+            document.getElementById('form-customerName').value = order.customerName || '';
+            document.getElementById('form-address').value = order.address || '';
+            document.getElementById('form-phone').value = order.phone || '';
+            document.getElementById('form-deliveryType').value = order.deliveryType || 'delivery';
+            document.getElementById('form-date').value = order.deliveryDate || '';
+            document.getElementById('form-time').value = order.deliveryTime || '';
+            document.getElementById('form-paymentStatus').value = order.paymentMethod || 'Offen';
+            document.getElementById('form-isUrgent').checked = !!order.isUrgent;
+
+            closeDetailsModal();
             document.getElementById('modal-order').classList.remove('hidden');
         };
         
@@ -902,9 +927,20 @@
             };
             if(!p.customerName || !p.address) return alert("Name und Adresse sind Pflichtfelder!");
 
-            if(window.editingOrderId) await updateOrder(window.editingOrderId, p);
+            // Nur überschreiben, falls beim Editieren (oder Neu-Anlegen) wirklich eine neue Datei hochgeladen wurde
+            if (window.tempPdfBase64) p.pdfBase64 = window.tempPdfBase64;
+
+            if(window.editingOrderId) {
+                // Beim Bearbeiten auch den Status mit abspeichern
+                p.status = document.getElementById('form-status').value;
+                await updateOrder(window.editingOrderId, p);
+            }
             else {
-                p.status = 'offen'; p.createdBy = currentUserName; p.pdfBase64 = window.tempPdfBase64;
+                p.status = 'offen'; 
+                p.createdBy = currentUserName; 
+                // Fallback PDF, falls es im Payload noch nicht drin ist
+                if (!p.pdfBase64) p.pdfBase64 = window.tempPdfBase64; 
+                
                 if (isFirebaseConnected && db) await addDoc(collection(db, 'artifacts', 'saelog-logistik', 'public', 'data', 'orders'), p);
                 else { p.id = "local-"+Date.now(); orders.push(p); localStorage.setItem('saelog_orders', JSON.stringify(orders)); renderAll(); }
             }
@@ -956,9 +992,11 @@
                 ${pdfHtml}
             `;
 
+            // NEU: Bearbeiten-Button für Admin eingebaut
             const adminBtns = (currentUserRole === 'admin') ? `
                 <div class="flex space-x-1.5">
-                    <button onclick="deleteOrder('${order.id}')" class="bg-rose-500/10 text-rose-400 p-3 rounded-xl border border-rose-500/10" title="Löschen"><i class="fa-solid fa-trash-can"></i></button>
+                    <button onclick="editOrder('${order.id}')" class="bg-blue-500/10 text-blue-400 p-3 rounded-xl border border-blue-500/10 hover:bg-blue-500/20 transition" title="Bearbeiten"><i class="fa-solid fa-pen"></i></button>
+                    <button onclick="deleteOrder('${order.id}')" class="bg-rose-500/10 text-rose-400 p-3 rounded-xl border border-rose-500/10 hover:bg-rose-500/20 transition" title="Löschen"><i class="fa-solid fa-trash-can"></i></button>
                 </div>` : '';
 
             footer.innerHTML = `${adminBtns}<button onclick="closeDetailsModal()" class="flex-grow bg-slate-700 text-slate-200 font-bold py-3 rounded-xl">Schließen</button>`;
