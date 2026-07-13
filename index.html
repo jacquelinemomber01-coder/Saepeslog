@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -369,7 +368,7 @@
         </div>
     </div>
 
-    <!-- NEU: MODAL ZUSTELLUNG ABSCHLIESSEN (FOTO) -->
+    <!-- MODAL ZUSTELLUNG ABSCHLIESSEN (FOTO) -->
     <div id="modal-complete-delivery" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-slate-800 border border-slate-700/80 rounded-2xl w-full max-w-sm overflow-hidden flex flex-col shadow-2xl">
             <div class="p-5 border-b border-slate-700/50 flex items-center justify-between">
@@ -529,7 +528,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const defaultFirebaseConfig = {
             apiKey: "AIzaSyDkukzx6w_SmScqFTNAgGGV8SYTgG_wmoI",
@@ -554,9 +553,11 @@
         
         window.editingOrderId = null;
         window.tempPdfBase64 = null;
-        window.completingOrderId = null; // NEU: Für das Beweisfoto
-        window.tempDeliveryPhoto = null; // NEU: Temporäres Foto
+        window.completingOrderId = null; 
+        window.tempDeliveryPhoto = null; 
         const pendingDeletes = new Set();
+
+        let selectedMontageDate = new Date().toISOString().split('T')[0];
 
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -761,6 +762,9 @@
                     else if (order.deliveryType === 'montage') typeBadge = '<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">Montage</span>';
                     else typeBadge = '<span class="bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">Lieferung</span>';
 
+                    let dateStr = order.deliveryDate ? order.deliveryDate.split('-').reverse().join('.') : 'Ohne Datum';
+                    let timeStr = order.deliveryTime ? ` - ${order.deliveryTime}` : '';
+
                     listOffen.innerHTML += `
                         <div class="bg-slate-800 border ${borderColor} rounded-2xl p-5 transition flex flex-col space-y-4 relative">
                             <div>
@@ -768,7 +772,8 @@
                                     <h4 class="font-bold text-white leading-tight">${order.customerName}</h4>
                                     ${typeBadge}
                                 </div>
-                                <p class="text-xs text-slate-400 mt-1"><i class="fa-solid fa-location-dot"></i> ${order.street || order.address}</p>
+                                <p class="text-xs text-slate-300 mt-2"><i class="fa-regular fa-calendar text-teal-400 w-4"></i> <span class="font-bold">${dateStr}</span>${timeStr}</p>
+                                <p class="text-xs text-slate-400 mt-1"><i class="fa-solid fa-location-dot text-teal-400 w-4"></i> ${order.street || order.address}</p>
                             </div>
                             <div class="flex space-x-2 pt-2 border-t border-slate-700/40">
                                 <button onclick="showOrderDetails('${order.id}')" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs py-2.5 px-4 rounded-lg font-bold">Details</button>
@@ -786,6 +791,9 @@
                     else if (order.deliveryType === 'montage') typeBadge = '<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">Montage</span>';
                     else typeBadge = '<span class="bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">Lieferung</span>';
 
+                    let dateStr = order.deliveryDate ? order.deliveryDate.split('-').reverse().join('.') : 'Ohne Datum';
+                    let timeStr = order.deliveryTime ? ` - ${order.deliveryTime}` : '';
+
                     listBereit.innerHTML += `
                         <div class="bg-slate-800/60 border border-emerald-500/20 rounded-2xl p-5 flex flex-col space-y-4">
                             <div>
@@ -793,7 +801,8 @@
                                     <h4 class="font-bold text-slate-300">${order.customerName}</h4>
                                     ${typeBadge}
                                 </div>
-                                <p class="text-xs text-slate-400 mt-1"><i class="fa-solid fa-location-dot"></i> ${order.street || order.address}</p>
+                                <p class="text-xs text-slate-300 mt-2"><i class="fa-regular fa-calendar text-teal-400 w-4"></i> <span class="font-bold">${dateStr}</span>${timeStr}</p>
+                                <p class="text-xs text-slate-400 mt-1"><i class="fa-solid fa-location-dot text-teal-400 w-4"></i> ${order.street || order.address}</p>
                             </div>
                             <div class="flex space-x-2 pt-2 border-t border-slate-700/40">
                                 <button onclick="showOrderDetails('${order.id}')" class="flex-grow bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs py-2 rounded-lg font-bold">Details</button>
@@ -805,29 +814,33 @@
 
         window.optimizeLogistikPackliste = function(optimize = false) {
             const selectedDate = document.getElementById('lifo-date-filter').value;
-            let lifoList = [...orders].filter(o => o.deliveryDate === selectedDate && (o.status === 'offen' || o.status === 'in_richtung') && o.deliveryType === 'delivery');
+            // FIX: Jetzt auch 'gerichtet' im LIFO einbeziehen!
+            let lifoList = [...orders].filter(o => o.deliveryDate === selectedDate && ['offen', 'in_richtung', 'gerichtet'].includes(o.status) && o.deliveryType === 'delivery');
 
             if (optimize) {
                 lifoList.sort((a, b) => {
-                    return (a.routeIndex || 99) - (b.routeIndex || 99);
+                    return (a.routeIndex || 999) - (b.routeIndex || 999);
                 }).reverse(); 
                 
                 lifoList.forEach((o, i) => { updateOrder(o.id, { lifoIndex: i }); });
+                alert("Ladeliste wurde anhand der Routen-Daten berechnet!");
                 return; 
             }
 
-            lifoList.sort((a, b) => (a.lifoIndex || 0) - (b.lifoIndex || 0));
+            lifoList.sort((a, b) => (a.lifoIndex ?? 999) - (b.lifoIndex ?? 999));
             
             const container = document.getElementById('logistik-lifo-list');
             if (container) {
                 if(lifoList.length === 0) {
-                    container.innerHTML = `<li class="text-center text-slate-500 text-xs py-4">Keine LIFO-Daten für diesen Tag.</li>`;
+                    container.innerHTML = `<li class="text-center text-slate-500 text-xs py-4">Keine Lieferungen für diesen Tag gefunden.</li>`;
                 } else {
-                    container.innerHTML = lifoList.map((o, index) => `
+                    container.innerHTML = lifoList.map((o, index) => {
+                        let statusIcon = o.status === 'gerichtet' ? '<i class="fa-solid fa-check-circle text-emerald-500 ml-1" title="Gerichtet"></i>' : '';
+                        return `
                         <li class="bg-slate-800 border border-slate-700 p-3 rounded flex justify-between items-center shadow-sm relative group">
-                            <div class="absolute left-0 top-0 bottom-0 w-1 bg-teal-500 rounded-l"></div>
+                            <div class="absolute left-0 top-0 bottom-0 w-1 ${o.status === 'gerichtet' ? 'bg-emerald-500' : 'bg-teal-500'} rounded-l"></div>
                             <div class="pl-2 flex-grow">
-                                <p class="font-bold text-white text-sm">${o.customerName}</p>
+                                <p class="font-bold text-white text-sm">${o.customerName} ${statusIcon}</p>
                                 <p class="text-[10px] text-slate-400">${o.street || o.address}</p>
                             </div>
                             <div class="flex items-center space-x-3">
@@ -838,7 +851,7 @@
                                 </div>
                             </div>
                         </li>
-                    `).join('');
+                    `}).join('');
                 }
                 document.getElementById('logistik-lifo-container')?.classList.remove('hidden');
                 document.getElementById('logistik-lifo-container')?.classList.add('flex');
@@ -847,8 +860,9 @@
 
         window.moveLifo = function(id, direction) {
             const selectedDate = document.getElementById('lifo-date-filter').value;
-            let lifoList = [...orders].filter(o => o.deliveryDate === selectedDate && (o.status === 'offen' || o.status === 'in_richtung') && o.deliveryType === 'delivery');
-            lifoList.sort((a, b) => (a.lifoIndex || 0) - (b.lifoIndex || 0));
+            let lifoList = [...orders].filter(o => o.deliveryDate === selectedDate && ['offen', 'in_richtung', 'gerichtet'].includes(o.status) && o.deliveryType === 'delivery');
+            
+            lifoList.sort((a, b) => (a.lifoIndex ?? 999) - (b.lifoIndex ?? 999));
 
             let idx = lifoList.findIndex(o => o.id === id);
             if (idx < 0) return;
@@ -856,14 +870,21 @@
             let swapIdx = idx + direction;
             if (swapIdx < 0 || swapIdx >= lifoList.length) return;
 
-            lifoList.forEach((o, i) => { o.lifoIndex = o.lifoIndex ?? i; });
+            // Element im Array tauschen
+            let temp = lifoList[idx];
+            lifoList[idx] = lifoList[swapIdx];
+            lifoList[swapIdx] = temp;
 
-            let temp = lifoList[idx].lifoIndex;
-            lifoList[idx].lifoIndex = lifoList[swapIdx].lifoIndex;
-            lifoList[swapIdx].lifoIndex = temp;
-
-            updateOrder(lifoList[idx].id, { lifoIndex: lifoList[idx].lifoIndex });
-            updateOrder(lifoList[swapIdx].id, { lifoIndex: lifoList[swapIdx].lifoIndex });
+            // Alle neu nummerieren und in DB speichern
+            lifoList.forEach((o, i) => {
+                if (o.lifoIndex !== i) {
+                    o.lifoIndex = i; // Direkt im Array anpassen für schnelle UI
+                    updateOrder(o.id, { lifoIndex: i }); // In DB schießen
+                }
+            });
+            
+            // UI sofort ohne flackern neu zeichnen
+            optimizeLogistikPackliste(false);
         };
 
 
@@ -904,17 +925,12 @@
                         <div class="flex gap-2 mt-3 border-t border-slate-700/50 pt-3">
                             <button onclick="openSingleRouteInMaps('${encodeURIComponent(order.address)}')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 text-xs shadow-lg transition"><i class="fa-solid fa-location-arrow"></i> 📍 Route</button>
                             <button onclick="showOrderDetails('${order.id}')" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 text-xs transition"><i class="fa-solid fa-info-circle"></i> Info</button>
-                            
-                            <!-- NEU: Fertig Button öffnet nun das Foto Modal -->
                             <button onclick="openCompleteDeliveryModal('${order.id}')" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 text-xs shadow-lg transition"><i class="fa-solid fa-check"></i> Fertig</button>
                         </div>
                     </div>`;
             });
         };
 
-        // =========================================================
-        // NEU: FOTO-UPLOADER FÜR ZUSTELLUNG
-        // =========================================================
         window.openCompleteDeliveryModal = function(id) {
             window.completingOrderId = id;
             window.tempDeliveryPhoto = null;
@@ -936,7 +952,6 @@
             reader.onload = function(e) {
                 const img = new Image();
                 img.onload = function() {
-                    // Komprimieren für die Datenbank (Max. 1000px Breite/Höhe)
                     const canvas = document.createElement('canvas');
                     const MAX_WIDTH = 1000;
                     const MAX_HEIGHT = 1000;
@@ -954,7 +969,6 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
                     
-                    // Speichere als JPEG (0.6 Qualität = Gute Kompression)
                     window.tempDeliveryPhoto = canvas.toDataURL('image/jpeg', 0.6); 
                     
                     document.getElementById('delivery-photo-preview').src = window.tempDeliveryPhoto;
@@ -976,7 +990,12 @@
         window.confirmDeliveryComplete = function() {
             if (!window.completingOrderId) return;
             
-            let payload = { status: 'geliefert' };
+            let payload = { 
+                status: 'geliefert',
+                updatedBy: currentUserName,
+                updatedAt: new Date().toLocaleString('de-DE')
+            };
+            
             if (window.tempDeliveryPhoto) {
                 payload.deliveryPhotoBase64 = window.tempDeliveryPhoto;
             }
@@ -984,7 +1003,6 @@
             updateOrder(window.completingOrderId, payload);
             closeCompleteDeliveryModal();
         };
-        // =========================================================
 
         window.openFullRouteInMaps = function() {
             const selectedDate = document.getElementById('fahrer-date-filter').value;
@@ -1125,9 +1143,125 @@
             setTimeout(() => { leafletMap.invalidateSize(); leafletMap.fitBounds(mapLayer.getBounds(), {padding: [40, 40]}); }, 300);
         };
 
-        function renderMontageAppointments() { /* ... */ }
-        function renderArchiv() { /* ... */ }
+        // ==========================================
+        // MONTAGE UND ARCHIV FUNKTIONEN
+        // ==========================================
+
+        window.setMontageDate = function(dateStr) {
+            selectedMontageDate = dateStr;
+            renderMontageAppointments();
+        };
+
+        function renderMontageAppointments() {
+            const weekPicker = document.getElementById('montage-week-picker');
+            const listMontage = document.getElementById('list-montage-appointments');
+            
+            // Wochen-Leiste bauen
+            weekPicker.innerHTML = '';
+            let today = new Date();
+            for(let i=0; i<14; i++) {
+                let d = new Date(today);
+                d.setDate(today.getDate() + i);
+                let dateStr = d.toISOString().split('T')[0];
+                let isSelected = (dateStr === selectedMontageDate);
+                let dayName = d.toLocaleDateString('de-DE', {weekday: 'short'});
+                let dayNum = d.getDate();
+                
+                let btnClass = isSelected 
+                    ? 'bg-teal-500 text-slate-900 shadow-lg shadow-teal-500/20 font-bold' 
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600';
+                    
+                weekPicker.innerHTML += `
+                    <button onclick="setMontageDate('${dateStr}')" class="flex flex-col items-center justify-center min-w-[60px] h-[60px] rounded-xl transition ${btnClass}">
+                        <span class="text-[10px] uppercase tracking-wider">${dayName}</span>
+                        <span class="text-lg">${dayNum}</span>
+                    </button>
+                `;
+            }
+
+            // Liste bauen
+            listMontage.innerHTML = '';
+            let items = orders.filter(o => o.deliveryType === 'montage' && o.deliveryDate === selectedMontageDate);
+            document.getElementById('montage-list-title').innerText = `Montagen für ${new Date(selectedMontageDate).toLocaleDateString('de-DE')}`;
+            
+            if(items.length === 0) {
+                listMontage.innerHTML = `<div class="col-span-full p-8 text-center bg-slate-800/20 border border-dashed border-slate-700/50 rounded-2xl text-slate-500">Keine Montagen an diesem Tag geplant.</div>`;
+                return;
+            }
+
+            items.forEach(order => {
+                let statusColor = 'border-slate-700/80';
+                if(order.status === 'montage_anfahrt') statusColor = 'border-amber-500/80';
+                if(order.status === 'montage_aktiv') statusColor = 'border-blue-500/80';
+                if(order.status === 'montage_erledigt') statusColor = 'border-emerald-500/80';
+                
+                listMontage.innerHTML += `
+                    <div class="bg-slate-800 border ${statusColor} rounded-2xl p-5 shadow-lg flex flex-col space-y-4">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="text-lg font-bold text-white">${order.customerName}</h3>
+                                <p class="text-xs text-slate-400 mt-1"><i class="fa-solid fa-location-dot"></i> ${order.street || order.address}</p>
+                            </div>
+                            <span class="bg-slate-900 border border-slate-700 px-2.5 py-1 rounded-lg text-xs font-bold text-teal-400">${order.deliveryTime || 'Zeit n.a.'}</span>
+                        </div>
+                        
+                        <div class="grid grid-cols-3 gap-2">
+                            <button onclick="updateOrderStatus('${order.id}', 'montage_anfahrt')" class="flex flex-col items-center py-2.5 rounded-xl text-[10px] font-bold uppercase transition ${order.status === 'montage_anfahrt' ? 'bg-amber-500 text-slate-900 shadow-lg shadow-amber-500/20' : 'bg-slate-700 text-slate-400 hover:bg-slate-600'}"><i class="fa-solid fa-car mb-1 text-sm"></i> Anfahrt</button>
+                            <button onclick="updateOrderStatus('${order.id}', 'montage_aktiv')" class="flex flex-col items-center py-2.5 rounded-xl text-[10px] font-bold uppercase transition ${order.status === 'montage_aktiv' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'bg-slate-700 text-slate-400 hover:bg-slate-600'}"><i class="fa-solid fa-screwdriver-wrench mb-1 text-sm"></i> Aktiv</button>
+                            <button onclick="updateOrderStatus('${order.id}', 'montage_erledigt')" class="flex flex-col items-center py-2.5 rounded-xl text-[10px] font-bold uppercase transition ${order.status === 'montage_erledigt' ? 'bg-emerald-500 text-slate-900 shadow-lg shadow-emerald-500/20' : 'bg-slate-700 text-slate-400 hover:bg-slate-600'}"><i class="fa-solid fa-check mb-1 text-sm"></i> Fertig</button>
+                        </div>
+                        
+                        <div class="flex gap-2 border-t border-slate-700/50 pt-3">
+                            <button onclick="showOrderDetails('${order.id}')" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-2.5 rounded-xl text-xs transition"><i class="fa-solid fa-info-circle"></i> Info</button>
+                            <button onclick="openSingleRouteInMaps('${encodeURIComponent(order.address)}')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-lg"><i class="fa-solid fa-location-arrow"></i> Route</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderArchiv() {
+            const tbody = document.getElementById('table-archiv-body');
+            tbody.innerHTML = '';
+            
+            // Nur komplett fertige Aufträge anzeigen
+            let archivItems = orders.filter(o => ['geliefert', 'abgeholt', 'montage_erledigt'].includes(o.status));
+            
+            // Neueste zuerst
+            archivItems.sort((a,b) => new Date(b.deliveryDate || '1970-01-01') - new Date(a.deliveryDate || '1970-01-01'));
+            
+            if(archivItems.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-500">Keine abgeschlossenen Aufträge im Archiv.</td></tr>`;
+                return;
+            }
+            
+            archivItems.forEach(order => {
+                let statusBadge = '';
+                if(order.status === 'geliefert') statusBadge = '<span class="text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-1 rounded-md text-[10px] font-bold">GELIEFERT</span>';
+                if(order.status === 'abgeholt') statusBadge = '<span class="text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-1 rounded-md text-[10px] font-bold">ABGEHOLT</span>';
+                if(order.status === 'montage_erledigt') statusBadge = '<span class="text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-md text-[10px] font-bold">MONTIERT</span>';
+                
+                let typeIcon = '';
+                if(order.deliveryType === 'delivery') typeIcon = '<i class="fa-solid fa-truck text-blue-400 w-5"></i>';
+                if(order.deliveryType === 'pickup') typeIcon = '<i class="fa-solid fa-box-open text-amber-400 w-5"></i>';
+                if(order.deliveryType === 'montage') typeIcon = '<i class="fa-solid fa-screwdriver-wrench text-emerald-400 w-5"></i>';
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-700/30 transition">
+                        <td class="p-4 font-bold text-white whitespace-nowrap">${order.customerName}</td>
+                        <td class="p-4 text-slate-300 flex items-center whitespace-nowrap">${typeIcon} <span class="ml-2">${order.deliveryDate ? order.deliveryDate.split('-').reverse().join('.') : 'n/a'}</span></td>
+                        <td class="p-4 text-slate-400 whitespace-nowrap">${order.paymentMethod || '-'}</td>
+                        <td class="p-4 whitespace-nowrap">${statusBadge}</td>
+                        <td class="p-4 text-right">
+                            <button onclick="showOrderDetails('${order.id}')" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-2 rounded-lg text-xs font-bold transition">Details</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
         
+        // ==========================================
+
         window.openNewOrderModal = function() {
             window.editingOrderId = null; 
             window.tempPdfBase64 = null;
@@ -1216,16 +1350,30 @@
 
             if(window.editingOrderId) {
                 p.status = document.getElementById('form-status').value;
+                p.updatedBy = currentUserName;
+                p.updatedAt = new Date().toLocaleString('de-DE');
                 await updateOrder(window.editingOrderId, p);
             }
             else {
                 p.status = 'offen'; 
                 p.createdBy = currentUserName; 
+                p.createdAt = new Date().toLocaleString('de-DE');
+                p.updatedBy = currentUserName;
+                p.updatedAt = new Date().toLocaleString('de-DE');
                 if (!p.pdfBase64) p.pdfBase64 = window.tempPdfBase64; 
+
                 if (isFirebaseConnected && db) await addDoc(collection(db, 'artifacts', 'saelog-logistik', 'public', 'data', 'orders'), p);
                 else { p.id = "local-"+Date.now(); orders.push(p); localStorage.setItem('saelog_orders', JSON.stringify(orders)); renderAll(); }
             }
             closeNewOrderModal();
+        };
+
+        window.updateOrderStatus = function(id, status) { 
+            updateOrder(id, { 
+                status: status,
+                updatedBy: currentUserName,
+                updatedAt: new Date().toLocaleString('de-DE')
+            }); 
         };
 
         async function updateOrder(id, payload) {
@@ -1235,8 +1383,6 @@
                 if(order) { Object.assign(order, payload); localStorage.setItem('saelog_orders', JSON.stringify(orders)); renderAll(); }
             }
         }
-
-        window.updateOrderStatus = function(id, status) { updateOrder(id, { status: status }); };
 
         window.showOrderDetails = function(id) {
             const order = orders.find(o => o.id === id);
@@ -1253,14 +1399,21 @@
             const expressBadge = order.isUrgent ? `<span class="bg-purple-500/20 text-purple-400 text-xs px-2.5 py-1 rounded-full font-bold uppercase border border-purple-500/30 ml-2 shadow-[0_0_10px_rgba(168,85,247,0.3)]"><i class="fa-solid fa-bolt text-yellow-300 mr-1"></i> Express</span>` : '';
 
             let pdfHtml = order.pdfBase64 
-                ? `<button onclick="viewPDFData('${order.id}')" class="w-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold py-3 rounded-xl border border-rose-500/20 text-sm mt-3"><i class="fa-solid fa-file-pdf"></i> PDF Lieferschein ansehen</button>` 
+                ? `<button onclick="viewPDFData('${order.id}')" class="w-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold py-3 rounded-xl border border-rose-500/20 text-sm mt-3 transition"><i class="fa-solid fa-file-pdf"></i> PDF Lieferschein ansehen</button>` 
                 : `<div class="bg-slate-900/40 p-4 rounded-xl border border-dashed border-slate-700/60 text-center text-xs mt-3">Kein PDF hinterlegt.</div>`;
 
-            // NEU: Anzeige des Beweisfotos, falls vorhanden
             let photoHtml = order.deliveryPhotoBase64 
                 ? `<div class="mt-4"><label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2"><i class="fa-solid fa-camera text-emerald-400 mr-1"></i> Beweis-Foto Zustellung</label>
                    <img src="${order.deliveryPhotoBase64}" class="w-full h-48 object-cover rounded-xl border border-slate-700 shadow-lg cursor-pointer" onclick="window.open(this.src, '_blank')" alt="Beweisfoto"></div>`
                 : '';
+
+            let auditHtml = `
+                <div class="mt-4 p-3 bg-slate-900/50 rounded-lg border border-slate-700/50">
+                    <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-1"><i class="fa-solid fa-clock-rotate-left"></i> Verlauf</p>
+                    <p class="text-xs text-slate-400">Erfasst von: <span class="text-slate-200">${order.createdBy || 'System'}</span> ${order.createdAt ? `am ${order.createdAt}` : ''}</p>
+                    <p class="text-xs text-slate-400">Letztes Update: <span class="text-slate-200">${order.updatedBy || '-'}</span> ${order.updatedAt ? `am ${order.updatedAt}` : ''}</p>
+                </div>
+            `;
 
             content.innerHTML = `
                 <div class="flex items-start justify-between"><div><span class="text-[10px] font-bold text-slate-400 uppercase">Kunde</span><h4 class="text-xl font-bold text-white flex items-center">${order.customerName}</h4></div>${typeBadge}</div>
@@ -1272,11 +1425,12 @@
                     </button>
                     
                     <p class="pr-12"><i class="fa-solid fa-location-dot text-teal-400 w-5"></i> ${order.address}</p>
-                    <p><i class="fa-solid fa-clock text-teal-400 w-5"></i> ${order.deliveryDate || ''} ${order.deliveryTime || ''}</p>
+                    <p><i class="fa-solid fa-clock text-teal-400 w-5"></i> ${order.deliveryDate ? order.deliveryDate.split('-').reverse().join('.') : ''} ${order.deliveryTime || ''}</p>
                     <p><i class="fa-solid fa-phone text-teal-400 w-5"></i> ${order.phone || 'Keine Nummer'}</p>
                     <p><i class="fa-solid fa-money-bill-wave text-teal-400 w-5"></i> Bezahlung: <span class="font-bold text-white">${order.paymentMethod && order.paymentMethod !== 'Offen' ? order.paymentMethod : 'Keine Angabe'}</span></p>
                     <p><i class="fa-solid fa-signal text-teal-400 w-5"></i> <span class="uppercase text-teal-300 font-bold">${order.status.replace('_',' ')}</span></p>
                 </div>
+                ${auditHtml}
                 ${photoHtml}
                 ${pdfHtml}
             `;
