@@ -168,7 +168,6 @@
 
         <!-- SEITE 2: FAHRER -->
         <div id="page-fahrer" class="space-y-6 hidden">
-            <!-- (Inhalt bleibt gleich wie vorher) -->
             <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
                 <div>
                     <h2 class="text-2xl font-bold text-white">Zustell-Tour</h2>
@@ -202,7 +201,6 @@
 
         <!-- SEITE 3: MONTAGE -->
         <div id="page-montage" class="space-y-6 hidden">
-            <!-- (Inhalt bleibt gleich wie vorher) -->
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h2 class="text-2xl font-bold text-white">Montageservice</h2>
@@ -271,7 +269,6 @@
         </div>
     </nav>
 
-    <!-- (Modale für Rollen, PIN, Einstellungen bleiben gleich) -->
     <!-- MODAL: ROLLENAUSWAHL -->
     <div id="modal-role-select" class="fixed inset-0 bg-slate-950 z-[100] flex items-center justify-center p-4 hidden">
         <div class="bg-slate-800 border border-slate-700/80 rounded-3xl w-full max-w-lg p-6 space-y-5 shadow-2xl">
@@ -423,10 +420,9 @@
             </div>
             <div class="p-6 overflow-y-auto space-y-5 no-scrollbar">
                 
-                <!-- PDF Upload -->
+                <!-- PDF Upload & Vorschau -->
                 <div>
                     <div id="pdf-upload-section" class="border-2 border-dashed border-slate-600/60 hover:border-teal-500/80 rounded-xl p-5 text-center bg-slate-900/40 cursor-pointer relative group">
-                        <!-- MULTIPLE ERLAUBT -->
                         <input type="file" id="pdf-file-input" accept="application/pdf" multiple class="absolute inset-0 opacity-0 cursor-pointer">
                         <div class="space-y-2">
                             <div class="text-teal-400 group-hover:scale-110 transition duration-300"><i class="fa-solid fa-file-pdf text-3xl"></i></div>
@@ -434,6 +430,14 @@
                             <p class="text-xs text-slate-500">Du kannst auch mehrere gleichzeitig auswählen.</p>
                         </div>
                     </div>
+                    
+                    <!-- Große Vorschau (standardmäßig versteckt) -->
+                    <div id="pdf-preview-container" class="hidden w-full h-80 border border-slate-700 rounded-xl overflow-hidden relative shadow-inner bg-white mt-4">
+                        <div class="absolute top-2 left-2 bg-slate-900/80 text-white text-[10px] uppercase font-bold px-2 py-1 rounded backdrop-blur z-10">Vorschau</div>
+                        <button type="button" onclick="document.getElementById('pdf-preview-container').classList.add('hidden')" class="absolute top-2 right-2 bg-rose-500 hover:bg-rose-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold shadow-lg z-10 transition"><i class="fa-solid fa-xmark mr-1"></i> Schließen</button>
+                        <iframe id="pdf-preview-iframe" class="w-full h-full border-0 relative z-0"></iframe>
+                    </div>
+
                     <!-- Liste der hochgeladenen PDFs -->
                     <div id="pdf-list-container" class="hidden flex flex-col gap-2 mt-3"></div>
                 </div>
@@ -509,7 +513,6 @@
                         </select>
                     </div>
                     
-                    <!-- NEU: Notiz Feld -->
                     <div>
                         <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Interne Notiz (Optional)</label>
                         <textarea id="form-notes" rows="2" placeholder="Besonderheiten, Abstellhinweise etc." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-teal-500"></textarea>
@@ -573,10 +576,10 @@
         let mapLayer = null;
         
         window.editingOrderId = null;
-        window.tempPdfs = []; // NEU: Array für mehrere PDFs
+        window.tempPdfs = []; // Array für mehrere PDFs
         window.completingOrderId = null; 
         window.tempDeliveryPhoto = null; 
-        window.selectedForGroup = new Set(); // NEU: Für Gruppierung am Packtisch
+        window.selectedForGroup = new Set(); // Für Gruppierung am Packtisch
         const pendingDeletes = new Set();
 
         let selectedMontageDate = new Date().toISOString().split('T')[0];
@@ -634,7 +637,7 @@
             });
         }
 
-        // --- Modals, PINs und Rollen --- (wie vorher)
+        // --- Modals, PINs und Rollen ---
         window.openSettingsModal = function() {
             document.getElementById('set-pin-admin').value = PINS.admin || "";
             document.getElementById('set-pin-logistik').value = PINS.logistiker || "";
@@ -762,7 +765,7 @@
         }
 
         // ==========================================
-        // NEU: GRUPPIERUNG LOGIK (PALETTE)
+        // GRUPPIERUNG LOGIK (PALETTE)
         // ==========================================
         
         window.toggleGroupSelect = function(id, isChecked) {
@@ -808,7 +811,6 @@
             }
         };
 
-        // Hilfsfunktion zum Rendern einer Kachel (offen oder bereit)
         function createOrderCardHtml(order, isInProgress, isBereit = false) {
             let borderColor = isBereit ? 'border-emerald-500/20' : (isInProgress ? 'border-amber-500/40' : (order.isUrgent ? 'border-purple-500/60' : 'border-slate-700/60'));
             let bgClass = isBereit ? 'bg-slate-800/60' : 'bg-slate-800';
@@ -863,7 +865,6 @@
             document.getElementById('count-offen').innerText = offenItems.length;
             document.getElementById('count-bereit').innerText = bereitItems.length;
 
-            // Render-Funktion die auch Paletten-Gruppen baut
             function renderSection(items, containerElement, isBereitSection) {
                 containerElement.innerHTML = '';
                 if (items.length === 0) {
@@ -880,7 +881,6 @@
                     } else { ungrouped.push(o); }
                 });
 
-                // Gruppierte Kacheln rendern
                 let groupCounter = 1;
                 for (const [gId, gItems] of Object.entries(grouped)) {
                     let cardsHtml = gItems.map(o => createOrderCardHtml(o, o.status === 'in_richtung', isBereitSection)).join('');
@@ -896,7 +896,6 @@
                     `;
                 }
 
-                // Ungruppierte rendern
                 ungrouped.forEach(o => {
                     containerElement.innerHTML += createOrderCardHtml(o, o.status === 'in_richtung', isBereitSection);
                 });
@@ -906,7 +905,6 @@
             renderSection(bereitItems, listBereit, true);
         }
 
-        // LIFO, Fahrer, Montage bleiben gleich...
         window.optimizeLogistikPackliste = function(optimize = false) {
             const selectedDate = document.getElementById('lifo-date-filter').value;
             let lifoList = [...orders].filter(o => o.deliveryDate === selectedDate && ['offen', 'in_richtung', 'gerichtet'].includes(o.status) && o.deliveryType === 'delivery');
@@ -1267,13 +1265,27 @@
             });
         }
         
-        // --- ORDER MANAGEMENT ---
+        // --- ORDER MANAGEMENT & MULTI PDF ---
 
-        // NEU: Rendering der angehängten PDFs
+        window.previewPdf = function(index) {
+            const pdf = window.tempPdfs[index];
+            if (!pdf) return;
+            const arr = pdf.base64.split(',');
+            const bstr = atob(arr[1] || arr[0]);
+            let n = bstr.length;
+            const u8arr = new Uint8Array(n);
+            while(n--) u8arr[n] = bstr.charCodeAt(n);
+            const blob = new Blob([u8arr], {type: 'application/pdf'});
+            document.getElementById('pdf-preview-iframe').src = URL.createObjectURL(blob);
+            document.getElementById('pdf-preview-container').classList.remove('hidden');
+        };
+
         window.removePdf = function(index) {
             window.tempPdfs.splice(index, 1);
             renderPdfList();
-        }
+            document.getElementById('pdf-preview-container').classList.add('hidden');
+            document.getElementById('pdf-preview-iframe').src = "";
+        };
 
         function renderPdfList() {
             const container = document.getElementById('pdf-list-container');
@@ -1286,7 +1298,10 @@
             container.innerHTML = window.tempPdfs.map((p, i) => `
                 <div class="flex items-center justify-between bg-slate-900 p-3 rounded-xl border border-slate-700 shadow-sm">
                     <span class="text-sm font-bold text-slate-200 truncate pr-2"><i class="fa-solid fa-file-pdf text-rose-500 mr-2 text-lg"></i>${p.name}</span>
-                    <button type="button" onclick="removePdf(${i})" class="text-rose-500 hover:text-rose-400 p-2 bg-rose-500/10 rounded-lg"><i class="fa-solid fa-trash-can"></i></button>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="previewPdf(${i})" class="text-teal-400 hover:bg-teal-500/10 px-3 py-1.5 text-xs font-bold border border-teal-500/30 rounded-lg transition"><i class="fa-solid fa-eye mr-1"></i> Vorschau</button>
+                        <button type="button" onclick="removePdf(${i})" class="text-rose-500 hover:text-rose-400 p-2 bg-rose-500/10 hover:bg-rose-500/20 rounded-lg transition"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>
                 </div>
             `).join('');
         }
@@ -1299,6 +1314,8 @@
             document.getElementById('form-status-container').classList.add('hidden'); 
             
             document.getElementById('pdf-file-input').value = "";
+            document.getElementById('pdf-preview-container').classList.add('hidden');
+            document.getElementById('pdf-preview-iframe').src = "";
             renderPdfList();
 
             ['customerName', 'street', 'zip', 'city', 'phone', 'time', 'notes'].forEach(id => document.getElementById(`form-${id}`).value = '');
@@ -1313,8 +1330,10 @@
             if (!order) return;
             window.editingOrderId = id;
             
-            // Alte Einzel-PDF (pdfBase64) in neues Array (pdfs) formatieren falls nötig
             window.tempPdfs = order.pdfs ? [...order.pdfs] : (order.pdfBase64 ? [{name: "Lieferschein.pdf", base64: order.pdfBase64}] : []);
+            
+            document.getElementById('pdf-preview-container').classList.add('hidden');
+            document.getElementById('pdf-preview-iframe').src = "";
             renderPdfList();
 
             document.getElementById('modal-order-icon').className = "fa-solid fa-pen-to-square text-blue-400";
@@ -1340,6 +1359,8 @@
         
         window.closeNewOrderModal = function() { 
             document.getElementById('modal-order').classList.add('hidden');
+            document.getElementById('pdf-preview-container').classList.add('hidden');
+            document.getElementById('pdf-preview-iframe').src = "";
         };
 
         window.saveNewOrder = async function() {
@@ -1360,7 +1381,7 @@
                 notes: document.getElementById('form-notes').value.trim(),
                 paymentMethod: document.getElementById('form-paymentStatus').value,
                 isUrgent: document.getElementById('form-isUrgent').checked,
-                pdfs: window.tempPdfs // NEU: Array an PDFs
+                pdfs: window.tempPdfs 
             };
 
             if(!p.customerName || !street || !zip || !city) return alert("Name und komplette Adresse (Straße, PLZ, Ort) sind Pflichtfelder!");
@@ -1410,7 +1431,6 @@
 
             const expressBadge = order.isUrgent ? `<span class="bg-purple-500/20 text-purple-400 text-xs px-2.5 py-1 rounded-full font-bold uppercase border border-purple-500/30 ml-2 shadow-[0_0_10px_rgba(168,85,247,0.3)]"><i class="fa-solid fa-bolt text-yellow-300 mr-1"></i> Express</span>` : '';
 
-            // Notizen rendern
             let notesHtml = order.notes 
                 ? `<div class="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
                     <p class="text-[10px] text-yellow-500 font-bold uppercase tracking-wider mb-1"><i class="fa-regular fa-note-sticky mr-1"></i> Interne Notiz</p>
@@ -1418,7 +1438,6 @@
                    </div>`
                 : '';
 
-            // PDFs rendern (Array oder Fallback)
             let pdfHtml = '';
             let orderPdfs = order.pdfs ? order.pdfs : (order.pdfBase64 ? [{name: "Lieferschein", base64: order.pdfBase64}] : []);
             
@@ -1484,7 +1503,6 @@
             }
         };
 
-        // PDF ansehen angepasst für Multi-PDFs
         window.viewPDFDataByIndex = function(id, index) {
             const order = orders.find(o => o.id === id);
             if (!order) return;
@@ -1512,7 +1530,6 @@
                     };
                     r1.readAsDataURL(file);
 
-                    // Automatisches Auslesen des ersten Lieferscheins für Telefonnummer & Art
                     if(i === 0) {
                         const r2 = new FileReader();
                         r2.onload = async (ev) => {
@@ -1529,13 +1546,12 @@
                                 
                                 const pMatch = txt.match(/(?:tel|mobil)[\s.:]*([+\d\s\-/()]{6,20})/i);
                                 if(pMatch) document.getElementById('form-phone').value = pMatch[1].trim();
-                            } catch(err) {} // Still fail on unparseable PDF
+                            } catch(err) {} 
                         };
                         r2.readAsArrayBuffer(file);
                     }
                 }
                 
-                // Formularfeld zurücksetzen, falls gleiche Datei nochmal gewählt wird
                 document.getElementById('pdf-file-input').value = "";
             });
         }
