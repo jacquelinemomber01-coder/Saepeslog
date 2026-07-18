@@ -49,7 +49,7 @@
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col selection:bg-teal-500 selection:text-white pb-24">
 
-    <!-- HEADER (Jetzt ohne 'sticky top-0 z-40' damit es normal scrollt) -->
+    <!-- HEADER -->
     <header class="bg-slate-800/80 backdrop-blur-md border-b border-slate-700/50 px-4 py-3">
         <div class="max-w-6xl mx-auto flex items-center justify-between">
             <div class="flex items-center space-x-3">
@@ -242,6 +242,57 @@
                 </div>
             </div>
         </div>
+
+        <!-- SEITE 5: BÜRO / ADMIN (NEU) -->
+        <div id="page-admin" class="space-y-6 hidden">
+            <div>
+                <h2 class="text-2xl font-bold text-white">Büro & Personal</h2>
+                <p class="text-sm text-slate-400">Arbeitszeiten und Planung wie in Excel.</p>
+            </div>
+            
+            <!-- Personenauswahl Tabs -->
+            <div class="flex space-x-2 border-b border-slate-700/50 pb-2">
+                <button onclick="setPersonalPerson('Helga')" id="btn-pers-helga" class="bg-teal-500 text-slate-900 font-bold px-6 py-2.5 rounded-t-xl transition">Helga</button>
+                <button onclick="setPersonalPerson('Jacky')" id="btn-pers-jacky" class="bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold px-6 py-2.5 rounded-t-xl transition">Jacky</button>
+            </div>
+
+            <!-- Excel-Tabelle -->
+            <div class="bg-slate-800/50 rounded-b-2xl rounded-tr-2xl border border-slate-700/50 p-4 md:p-5 overflow-hidden shadow-lg">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-white text-lg">Plan für <span id="pers-name-display" class="text-teal-400">Helga</span></h3>
+                    <button onclick="savePersonalPlan()" class="bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-bold px-4 py-2 rounded-xl text-xs transition shadow-lg flex items-center"><i class="fa-solid fa-floppy-disk mr-1.5"></i> Plan Speichern</button>
+                </div>
+                
+                <div class="overflow-x-auto border border-slate-700/80 rounded-xl">
+                    <table class="w-full text-left border-collapse min-w-[700px]">
+                        <thead>
+                            <tr class="bg-slate-900 text-slate-400 text-[11px] uppercase tracking-wider border-b border-slate-700/80">
+                                <th class="p-3 w-36">Datum</th>
+                                <th class="p-3 w-32">Wochentag</th>
+                                <th class="p-3">Arbeitszeit</th>
+                                <th class="p-3 w-28 text-center">Stunden 1</th>
+                                <th class="p-3 w-28 text-center">Stunden 2</th>
+                                <th class="p-3 w-12 text-center">Entf.</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-personal-body" class="divide-y divide-slate-700/50 text-sm">
+                            <!-- Zeilen werden hier via JavaScript eingefügt -->
+                        </tbody>
+                        <tfoot>
+                            <tr class="bg-slate-900/80 font-bold text-white border-t-2 border-teal-500/50">
+                                <td colspan="3" class="p-4 text-right tracking-wide text-slate-300">GESAMTSUMME STUNDEN:</td>
+                                <td class="p-4 text-center text-teal-400 text-lg" id="plan-sum-h1">0.00</td>
+                                <td class="p-4 text-center text-teal-400 text-lg" id="plan-sum-h2">0.00</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                
+                <button onclick="addPersonalRow()" class="mt-4 bg-slate-700/50 hover:bg-slate-700 text-teal-400 font-bold px-4 py-3 rounded-xl text-xs transition border border-slate-600 border-dashed w-full flex justify-center items-center"><i class="fa-solid fa-plus mr-1.5"></i> Weitere Zeile hinzufügen</button>
+            </div>
+        </div>
+
     </main>
 
     <!-- UNTERE NAVIGATION -->
@@ -265,6 +316,12 @@
             <button onclick="switchTab('archiv')" id="tab-archiv" class="flex flex-col items-center space-y-1 py-1.5 text-slate-400 font-medium transition-all duration-200">
                 <i class="fa-solid fa-list-check text-xl"></i>
                 <span class="text-[11px] tracking-wide">Archiv</span>
+            </button>
+            
+            <!-- NEUER BÜRO TAB (nur sichtbar wenn Admin) -->
+            <button onclick="switchTab('admin')" id="tab-admin" class="hidden flex-col items-center space-y-1 py-1.5 text-slate-400 font-medium transition-all duration-200">
+                <i class="fa-solid fa-briefcase text-xl"></i>
+                <span class="text-[11px] tracking-wide">Büro</span>
             </button>
         </div>
     </nav>
@@ -576,13 +633,17 @@
         let mapLayer = null;
         
         window.editingOrderId = null;
-        window.tempPdfs = []; // Array für mehrere PDFs
+        window.tempPdfs = []; 
         window.completingOrderId = null; 
         window.tempDeliveryPhoto = null; 
-        window.selectedForGroup = new Set(); // Für Gruppierung am Packtisch
+        window.selectedForGroup = new Set(); 
         const pendingDeletes = new Set();
 
         let selectedMontageDate = new Date().toISOString().split('T')[0];
+
+        // --- Personalplan Variablen ---
+        let personalPlanData = { Helga: [], Jacky: [] };
+        let activePerson = 'Helga';
 
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -610,6 +671,7 @@
                         document.getElementById('statusText').innerText = "Live Online";
                         listenToDatabase();
                         listenToPins(); 
+                        listenToPersonalPlan(); // NEU: Personalplan aus DB laden
                     } else fallbackToLocal();
                 });
             } catch (error) { fallbackToLocal(); }
@@ -619,6 +681,10 @@
             isFirebaseConnected = false;
             document.getElementById('statusText').innerText = "Lokal-Modus";
             orders = JSON.parse(localStorage.getItem('saelog_orders') || "[]");
+            // NEU: Personalplan lokal laden
+            const storedPersonal = localStorage.getItem('saelog_personalplan');
+            if(storedPersonal) { try { personalPlanData = JSON.parse(storedPersonal); } catch(e) {} }
+            
             renderAll();
         }
 
@@ -633,6 +699,19 @@
                     localStorage.setItem('saelog_pins', JSON.stringify(PINS));
                 } else {
                     setDoc(doc(db, 'artifacts', 'saelog-logistik', 'public', 'settings', 'pins'), PINS);
+                }
+            });
+        }
+
+        let dbUnsubscribePersonal = null;
+        function listenToPersonalPlan() {
+            if (!db) return;
+            if (dbUnsubscribePersonal) dbUnsubscribePersonal();
+            
+            dbUnsubscribePersonal = onSnapshot(doc(db, 'artifacts', 'saelog-logistik', 'public', 'data', 'personalplan'), (snap) => {
+                if (snap.exists()) {
+                    personalPlanData = snap.data();
+                    if(activeTab === 'admin') renderPersonalPlan();
                 }
             });
         }
@@ -721,34 +800,48 @@
             document.getElementById('roleHeaderBadge').innerText = `Rolle: ${labels[role]} (${userName})`;
 
             const btnSettings = document.getElementById('btn-settings');
-            if (role === 'admin') { btnSettings.classList.remove('hidden'); btnSettings.classList.add('flex'); } 
-            else { btnSettings.classList.add('hidden'); btnSettings.classList.remove('flex'); }
+            const tabAdmin = document.getElementById('tab-admin');
+            
+            if (role === 'admin') { 
+                btnSettings.classList.remove('hidden'); btnSettings.classList.add('flex'); 
+                tabAdmin.classList.remove('hidden'); tabAdmin.classList.add('flex');
+            } else { 
+                btnSettings.classList.add('hidden'); btnSettings.classList.remove('flex'); 
+                tabAdmin.classList.add('hidden'); tabAdmin.classList.remove('flex');
+            }
 
             ['btn-new-order', 'tab-logistiker', 'tab-fahrer', 'tab-montage', 'tab-archiv'].forEach(id => document.getElementById(id)?.classList.remove('hidden'));
 
             if (role === 'fahrer') {
-                ['btn-new-order', 'tab-logistiker', 'tab-montage', 'tab-archiv'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
+                ['btn-new-order', 'tab-logistiker', 'tab-montage', 'tab-archiv', 'tab-admin'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
                 switchTab('fahrer');
             } else if (role === 'logistiker') {
-                ['tab-fahrer', 'tab-montage'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
+                ['tab-fahrer', 'tab-montage', 'tab-admin'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
                 switchTab('logistiker');
             } else if (role === 'montage') {
-                ['btn-new-order', 'tab-logistiker', 'tab-fahrer', 'tab-archiv'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
+                ['btn-new-order', 'tab-logistiker', 'tab-fahrer', 'tab-archiv', 'tab-admin'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
                 switchTab('montage');
             } else {
-                switchTab('logistiker');
+                switchTab('logistiker'); // Standardansicht Büro
             }
         }
 
         window.switchTab = function(tabName) {
             activeTab = tabName;
-            ['logistiker', 'fahrer', 'montage', 'archiv'].forEach(t => {
-                document.getElementById(`page-${t}`).classList.add('hidden');
-                document.getElementById(`tab-${t}`).classList.remove('text-teal-400', 'font-semibold');
-                document.getElementById(`tab-${t}`).classList.add('text-slate-400', 'font-medium');
+            ['logistiker', 'fahrer', 'montage', 'archiv', 'admin'].forEach(t => {
+                const page = document.getElementById(`page-${t}`);
+                const tab = document.getElementById(`tab-${t}`);
+                if(page) page.classList.add('hidden');
+                if(tab) {
+                    tab.classList.remove('text-teal-400', 'font-semibold');
+                    tab.classList.add('text-slate-400', 'font-medium');
+                }
             });
             document.getElementById(`page-${tabName}`).classList.remove('hidden');
-            document.getElementById(`tab-${tabName}`).classList.add('text-teal-400', 'font-semibold');
+            const activeTabIcon = document.getElementById(`tab-${tabName}`);
+            if(activeTabIcon) {
+                activeTabIcon.classList.add('text-teal-400', 'font-semibold');
+            }
             renderAll();
         };
 
@@ -762,7 +855,91 @@
             else if (activeTab === 'fahrer') renderFahrerTour();
             else if (activeTab === 'montage') renderMontageAppointments();
             else if (activeTab === 'archiv') renderArchiv();
+            else if (activeTab === 'admin') renderPersonalPlan();
         }
+
+        // ==========================================
+        // PERSONALPLAN (BÜRO / ADMIN) NEU
+        // ==========================================
+        window.setPersonalPerson = function(name) {
+            activePerson = name;
+            document.getElementById('pers-name-display').innerText = name;
+            if(name === 'Helga') {
+                document.getElementById('btn-pers-helga').className = "bg-teal-500 text-slate-900 font-bold px-6 py-2.5 rounded-t-xl transition";
+                document.getElementById('btn-pers-jacky').className = "bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold px-6 py-2.5 rounded-t-xl transition";
+            } else {
+                document.getElementById('btn-pers-jacky').className = "bg-teal-500 text-slate-900 font-bold px-6 py-2.5 rounded-t-xl transition";
+                document.getElementById('btn-pers-helga').className = "bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold px-6 py-2.5 rounded-t-xl transition";
+            }
+            renderPersonalPlan();
+        };
+
+        function renderPersonalPlan() {
+            const tbody = document.getElementById('table-personal-body');
+            tbody.innerHTML = '';
+            let rows = personalPlanData[activePerson] || [];
+            
+            // Wenn leer, erstelle zumindest eine leere Zeile als Start
+            if(rows.length === 0) { rows = [{ date: '', weekday: '', time: '', hours1: '', hours2: '' }]; }
+
+            rows.forEach((r, idx) => { appendPersonalRowHtml(tbody, r, idx); });
+            window.calcPersonalSums();
+        }
+
+        function appendPersonalRowHtml(tbody, r, idx) {
+            const tr = document.createElement('tr');
+            tr.className = 'plan-row hover:bg-slate-800/80 transition';
+            tr.innerHTML = `
+                <td class="p-2 border-b border-slate-700/50"><input type="date" class="plan-date w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 text-xs focus:border-teal-500 outline-none" value="${r.date || ''}"></td>
+                <td class="p-2 border-b border-slate-700/50"><input type="text" placeholder="Mo, Di..." class="plan-weekday w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 text-xs focus:border-teal-500 outline-none" value="${r.weekday || ''}"></td>
+                <td class="p-2 border-b border-slate-700/50"><input type="text" placeholder="08:00 - 16:00" class="plan-time w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 text-xs focus:border-teal-500 outline-none" value="${r.time || ''}"></td>
+                <td class="p-2 border-b border-slate-700/50"><input type="number" step="0.25" min="0" placeholder="0.0" class="plan-hours1 w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 text-sm font-bold text-center focus:border-teal-500 outline-none" value="${r.hours1 || ''}" oninput="calcPersonalSums()"></td>
+                <td class="p-2 border-b border-slate-700/50"><input type="number" step="0.25" min="0" placeholder="0.0" class="plan-hours2 w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 text-sm font-bold text-center focus:border-teal-500 outline-none" value="${r.hours2 || ''}" oninput="calcPersonalSums()"></td>
+                <td class="p-2 border-b border-slate-700/50 text-center"><button onclick="this.closest('tr').remove(); calcPersonalSums();" class="text-rose-500 hover:text-rose-400 hover:bg-rose-500/10 p-2 rounded-lg transition"><i class="fa-solid fa-trash-can"></i></button></td>
+            `;
+            tbody.appendChild(tr);
+        }
+
+        window.addPersonalRow = function() {
+            const tbody = document.getElementById('table-personal-body');
+            appendPersonalRowHtml(tbody, { date: '', weekday: '', time: '', hours1: '', hours2: '' }, -1);
+        };
+
+        window.calcPersonalSums = function() {
+            let h1 = 0, h2 = 0;
+            document.querySelectorAll('.plan-hours1').forEach(input => {
+                let val = parseFloat(input.value);
+                if(!isNaN(val)) h1 += val;
+            });
+            document.querySelectorAll('.plan-hours2').forEach(input => {
+                let val = parseFloat(input.value);
+                if(!isNaN(val)) h2 += val;
+            });
+            document.getElementById('plan-sum-h1').innerText = h1.toFixed(2);
+            document.getElementById('plan-sum-h2').innerText = h2.toFixed(2);
+        };
+
+        window.savePersonalPlan = async function() {
+            let rows = [];
+            document.querySelectorAll('.plan-row').forEach(tr => {
+                rows.push({
+                    date: tr.querySelector('.plan-date').value,
+                    weekday: tr.querySelector('.plan-weekday').value,
+                    time: tr.querySelector('.plan-time').value,
+                    hours1: tr.querySelector('.plan-hours1').value,
+                    hours2: tr.querySelector('.plan-hours2').value
+                });
+            });
+            personalPlanData[activePerson] = rows;
+            
+            if (isFirebaseConnected && db) {
+                await setDoc(doc(db, 'artifacts', 'saelog-logistik', 'public', 'data', 'personalplan'), personalPlanData);
+            } else {
+                localStorage.setItem('saelog_personalplan', JSON.stringify(personalPlanData));
+            }
+            alert(`Personalplan für ${activePerson} erfolgreich gespeichert!`);
+        };
+
 
         // ==========================================
         // GRUPPIERUNG LOGIK (PALETTE)
@@ -820,6 +997,11 @@
                 actionBtn = !isInProgress 
                     ? `<button onclick="updateOrderStatus('${order.id}', 'in_richtung')" class="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs py-2.5 px-3 rounded-lg font-bold w-full">Richten starten</button>`
                     : `<button onclick="updateOrderStatus('${order.id}', '${order.deliveryType === 'pickup' ? 'abholbereit_gerichtet' : 'gerichtet'}')" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-slate-900 text-xs py-2.5 px-3 rounded-lg font-bold w-full">Richten fertig</button>`;
+            } else {
+                // NEU: Abhol-Button für Abholer
+                if(order.deliveryType === 'pickup') {
+                    actionBtn = `<button onclick="updateOrderStatus('${order.id}', 'abgeholt')" class="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs py-2.5 px-3 rounded-lg font-bold w-full shadow-lg"><i class="fa-solid fa-box-open mr-1"></i> Kunde hat abgeholt</button>`;
+                }
             }
 
             let typeBadge = '';
@@ -849,7 +1031,7 @@
                         <p class="text-xs text-slate-400 mt-1"><i class="fa-solid fa-location-dot text-teal-400 w-4"></i> ${order.street || order.address}</p>
                     </div>
                     <div class="flex space-x-2 pt-2 border-t border-slate-700/40">
-                        <button onclick="showOrderDetails('${order.id}')" class="${isBereit ? 'flex-grow' : ''} bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs py-2.5 px-4 rounded-lg font-bold">Details</button>
+                        <button onclick="showOrderDetails('${order.id}')" class="${isBereit && order.deliveryType !== 'pickup' ? 'flex-grow' : ''} bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs py-2.5 px-4 rounded-lg font-bold">Details</button>
                         ${actionBtn}
                     </div>
                 </div>`;
