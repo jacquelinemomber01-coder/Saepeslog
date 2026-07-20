@@ -268,12 +268,10 @@
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
                     <h3 class="font-bold text-white text-lg flex items-center">Plan für <span id="pers-name-display" class="text-teal-400 ml-1.5">Helga</span></h3>
                     <div class="flex items-center gap-2">
-                        <!-- MONATS-AUSWAHL -->
+                        <!-- MONATS-AUSWAHL ALS ECHTES INPUT TYPE MONTH -->
                         <div class="flex items-center bg-slate-900 rounded-xl border border-slate-700 px-2 overflow-hidden">
                             <i class="fa-solid fa-calendar-days text-slate-400 text-xs ml-2"></i>
-                            <select id="month-select" onchange="changePersonalMonth(this.value)" class="bg-transparent text-white font-bold text-sm px-2 py-2 outline-none cursor-pointer">
-                                <!-- Wird via JS befüllt -->
-                            </select>
+                            <input type="month" id="month-picker" onchange="changePersonalMonth(this.value)" class="bg-transparent text-white font-bold text-sm px-2 py-2 outline-none cursor-pointer">
                         </div>
                         <button onclick="savePersonalPlan()" class="bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-bold px-4 py-2 rounded-xl text-xs transition shadow-lg flex items-center"><i class="fa-solid fa-floppy-disk mr-1.5"></i> Speichern</button>
                     </div>
@@ -513,7 +511,7 @@
             </div>
             <div class="p-6 overflow-y-auto space-y-5 no-scrollbar">
                 
-                <!-- PDF Upload & Vorschau -->
+                <!-- PDF Upload & Vorschau (VERGRÖSSERT AUF 500px HÖHE) -->
                 <div>
                     <div id="pdf-upload-section" class="border-2 border-dashed border-slate-600/60 hover:border-teal-500/80 rounded-xl p-5 text-center bg-slate-900/40 cursor-pointer relative group">
                         <input type="file" id="pdf-file-input" accept="application/pdf" multiple class="absolute inset-0 opacity-0 cursor-pointer">
@@ -524,8 +522,7 @@
                         </div>
                     </div>
                     
-                    <!-- NEUER PDF PREVIEW CONTAINER MIT CANVAS -->
-                    <div id="pdf-preview-container" class="hidden w-full h-80 border border-slate-700 rounded-xl overflow-hidden relative shadow-inner bg-slate-200 mt-4">
+                    <div id="pdf-preview-container" class="hidden w-full h-[500px] border border-slate-700 rounded-xl overflow-hidden relative shadow-inner bg-slate-200 mt-4">
                         <div class="absolute top-2 left-2 bg-slate-900/80 text-white text-[10px] uppercase font-bold px-2 py-1 rounded backdrop-blur z-10">Vorschau</div>
                         <button type="button" onclick="document.getElementById('pdf-preview-container').classList.add('hidden')" class="absolute top-2 right-2 bg-rose-500 hover:bg-rose-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold shadow-lg z-10 transition"><i class="fa-solid fa-xmark mr-1"></i> Schließen</button>
                         
@@ -677,8 +674,8 @@
 
         let selectedMontageDate = new Date().toISOString().split('T')[0];
 
-        // --- Personalplan Variablen ---
-        let personalPlanData = { Helga: [], Jacky: [] };
+        // --- Personalplan Variablen (Monate streng getrennt) ---
+        let personalPlanData = { Helga: {}, Jacky: {} };
         let activePerson = 'Helga';
         window.selectedMonth = new Date().toISOString().substring(0,7); // YYYY-MM
 
@@ -719,8 +716,28 @@
             document.getElementById('statusText').innerText = "Lokal-Modus";
             orders = JSON.parse(localStorage.getItem('saelog_orders') || "[]");
             const storedPersonal = localStorage.getItem('saelog_personalplan');
-            if(storedPersonal) { try { personalPlanData = JSON.parse(storedPersonal); } catch(e) {} }
+            if(storedPersonal) { 
+                try { 
+                    personalPlanData = JSON.parse(storedPersonal); 
+                    migratePersonalDataFormat();
+                } catch(e) {} 
+            }
             renderAll();
+        }
+
+        function migratePersonalDataFormat() {
+            ['Helga', 'Jacky'].forEach(person => {
+                if (personalPlanData[person] && Array.isArray(personalPlanData[person])) {
+                    let oldArr = personalPlanData[person];
+                    personalPlanData[person] = {};
+                    oldArr.forEach(r => {
+                        let m = r.date ? r.date.substring(0,7) : window.selectedMonth;
+                        if (!personalPlanData[person][m]) personalPlanData[person][m] = [];
+                        personalPlanData[person][m].push(r);
+                    });
+                }
+                if (!personalPlanData[person]) personalPlanData[person] = {};
+            });
         }
 
         let dbUnsubscribePins = null;
@@ -740,6 +757,7 @@
             dbUnsubscribePersonal = onSnapshot(doc(db, 'artifacts', 'saelog-logistik', 'public', 'data', 'personalplan'), (snap) => {
                 if (snap.exists()) {
                     personalPlanData = snap.data();
+                    migratePersonalDataFormat();
                     if(activeTab === 'admin') renderPersonalPlan();
                 }
             });
@@ -845,7 +863,7 @@
         }
 
         window.switchTab = function(tabName) {
-            if(activeTab === 'admin') window.updatePersonalDataFromDOM(); // Save DOM state to memory before leaving
+            if(activeTab === 'admin') window.updatePersonalDataFromDOM();
             
             activeTab = tabName;
             ['logistiker', 'fahrer', 'montage', 'archiv', 'admin'].forEach(t => {
@@ -877,10 +895,10 @@
         }
 
         // ==========================================
-        // PERSONALPLAN (BÜRO / ADMIN)
+        // PERSONALPLAN (STRENG GETRENNTE MONATE)
         // ==========================================
         window.setPersonalPerson = function(name) {
-            window.updatePersonalDataFromDOM(); // Memory save before switching
+            window.updatePersonalDataFromDOM();
             activePerson = name;
             document.getElementById('pers-name-display').innerText = name;
             if(name === 'Helga') {
@@ -894,13 +912,16 @@
         };
 
         window.changePersonalMonth = function(monthStr) {
+            if(!monthStr) return;
             window.updatePersonalDataFromDOM();
             window.selectedMonth = monthStr;
             renderPersonalPlan();
         };
 
         window.updatePersonalDataFromDOM = function() {
-            if(!personalPlanData[activePerson]) personalPlanData[activePerson] = [];
+            if(!personalPlanData[activePerson]) personalPlanData[activePerson] = {};
+            if(Array.isArray(personalPlanData[activePerson])) migratePersonalDataFormat();
+
             let monthRows = [];
             document.querySelectorAll('.plan-row').forEach(tr => {
                 monthRows.push({
@@ -911,32 +932,29 @@
                     hours2: tr.querySelector('.plan-hours2').value
                 });
             });
-            // Update main array by replacing the current month's items
-            personalPlanData[activePerson] = personalPlanData[activePerson].filter(r => !(r.date && r.date.startsWith(window.selectedMonth)));
-            personalPlanData[activePerson].push(...monthRows);
-            personalPlanData[activePerson].sort((a,b) => a.date.localeCompare(b.date));
+            
+            // Intelligent sort into correct buckets based on their date
+            let buckets = personalPlanData[activePerson];
+            buckets[window.selectedMonth] = [];
+            
+            monthRows.forEach(r => {
+                let targetMonth = r.date ? r.date.substring(0,7) : window.selectedMonth;
+                if(!buckets[targetMonth]) buckets[targetMonth] = [];
+                buckets[targetMonth].push(r);
+            });
         };
 
         window.renderPersonalPlan = function() {
-            let allRows = personalPlanData[activePerson] || [];
+            if(!personalPlanData[activePerson]) personalPlanData[activePerson] = {};
+            if(Array.isArray(personalPlanData[activePerson])) migratePersonalDataFormat();
             
-            // Build Month List
-            let months = new Set();
-            allRows.forEach(r => { if(r.date) months.add(r.date.substring(0,7)); });
-            let todayMonth = new Date().toISOString().substring(0,7);
-            months.add(todayMonth);
-            
-            let monthArr = Array.from(months).sort().reverse();
-            if(!window.selectedMonth || !months.has(window.selectedMonth)) window.selectedMonth = monthArr[0];
-
-            let selectHtml = monthArr.map(m => `<option value="${m}" ${m === window.selectedMonth ? 'selected' : ''}>${m}</option>`).join('');
-            document.getElementById('month-select').innerHTML = selectHtml;
+            const picker = document.getElementById('month-picker');
+            if(picker) picker.value = window.selectedMonth;
 
             let tbody = document.getElementById('table-personal-body');
             tbody.innerHTML = '';
             
-            // Filtere nur für den ausgewählten Monat
-            let monthRows = allRows.filter(r => r.date && r.date.startsWith(window.selectedMonth));
+            let monthRows = personalPlanData[activePerson][window.selectedMonth] || [];
             
             if(monthRows.length === 0) { 
                 appendPersonalRowHtml(tbody, { date: window.selectedMonth + '-01', weekday: '', time: '', hours1: '', hours2: '' });
@@ -948,7 +966,6 @@
 
         window.checkRowColor = function(input) {
             const val = input.value.toLowerCase();
-            // Reset colors
             input.classList.remove('bg-emerald-500/20', 'text-emerald-400', 'bg-amber-500/20', 'text-amber-400', 'bg-rose-500/20', 'text-rose-400', 'border-emerald-500/50', 'border-amber-500/50', 'border-rose-500/50');
             
             if (val.includes('frei')) { input.classList.add('bg-emerald-500/20', 'text-emerald-400', 'border-emerald-500/50'); }
@@ -956,14 +973,11 @@
             else if (val.includes('sonntag')) { input.classList.add('bg-rose-500/20', 'text-rose-400', 'border-rose-500/50'); }
         };
 
-        // DIE NEUE RESPONSIVE FUNKTION FÜR DEN PERSONALPLAN
         function appendPersonalRowHtml(tbody, r) {
             const tr = document.createElement('tr');
-            // Tailwind Klassen für responsives Design (Karte auf Handy, Tabellenzeile am PC)
             tr.className = 'plan-row hover:bg-slate-800/80 transition flex flex-col md:table-row bg-slate-800/40 md:bg-transparent border border-slate-700/80 md:border-none rounded-2xl md:rounded-none mb-4 md:mb-0 p-3 md:p-0 relative shadow-lg md:shadow-none';
             
             tr.innerHTML = `
-                <!-- Delete Button (Handy: Oben rechts schwebend, PC: Rechte Spalte) -->
                 <td class="absolute top-3 right-3 md:static md:table-cell p-0 md:p-2 md:border-b border-slate-700/50 text-center z-10">
                     <button onclick="this.closest('tr').remove(); updatePersonalDataFromDOM(); calcPersonalSums();" class="text-rose-500 hover:text-rose-400 bg-slate-900 md:bg-transparent hover:bg-rose-500/10 p-2.5 rounded-xl transition border border-slate-700 md:border-none shadow-sm md:shadow-none"><i class="fa-solid fa-trash-can"></i></button>
                 </td>
@@ -994,21 +1008,21 @@
                 </td>
             `;
             tbody.appendChild(tr);
-            // Initiale Farbanwendung
             window.checkRowColor(tr.querySelector('.plan-weekday'));
             window.checkRowColor(tr.querySelector('.plan-time'));
         }
 
         window.addPersonalRow = function() {
-            window.updatePersonalDataFromDOM(); // Sicherstellen, dass alles in DB ist
-            let monthRows = personalPlanData[activePerson].filter(r => r.date && r.date.startsWith(window.selectedMonth));
+            window.updatePersonalDataFromDOM();
+            if(!personalPlanData[activePerson][window.selectedMonth]) personalPlanData[activePerson][window.selectedMonth] = [];
+            let monthRows = personalPlanData[activePerson][window.selectedMonth];
             
             let newDateStr = '';
             if (monthRows.length > 0) {
                 let lastDateStr = monthRows[monthRows.length - 1].date;
                 if(lastDateStr) {
                     let d = new Date(lastDateStr);
-                    d.setDate(d.getDate() + 1); // + 1 Tag
+                    d.setDate(d.getDate() + 1);
                     newDateStr = d.toISOString().split('T')[0];
                 }
             } else {
@@ -1017,23 +1031,25 @@
 
             const tbody = document.getElementById('table-personal-body');
             appendPersonalRowHtml(tbody, { date: newDateStr, weekday: '', time: '', hours1: '', hours2: '' });
-            window.updatePersonalDataFromDOM(); // Direkt übernehmen
+            window.updatePersonalDataFromDOM();
         };
 
         window.calcPersonalSums = function() {
-            // Aktueller Monat
             let h1 = 0, h2 = 0;
             document.querySelectorAll('.plan-hours1').forEach(input => { let val = parseFloat(input.value); if(!isNaN(val)) h1 += val; });
             document.querySelectorAll('.plan-hours2').forEach(input => { let val = parseFloat(input.value); if(!isNaN(val)) h2 += val; });
             document.getElementById('plan-sum-h1').innerText = h1.toFixed(2);
             document.getElementById('plan-sum-h2').innerText = h2.toFixed(2);
 
-            // Gesamte Zeit über alle Monate
             let totalAllTime = 0;
-            if(personalPlanData[activePerson]) {
-                personalPlanData[activePerson].forEach(r => {
-                    let val = parseFloat(r.hours2); // Stunden Spalte
-                    if(!isNaN(val)) totalAllTime += val;
+            if(personalPlanData[activePerson] && typeof personalPlanData[activePerson] === 'object') {
+                Object.values(personalPlanData[activePerson]).forEach(monthRows => {
+                    if(Array.isArray(monthRows)) {
+                        monthRows.forEach(r => {
+                            let val = parseFloat(r.hours2);
+                            if(!isNaN(val)) totalAllTime += val;
+                        });
+                    }
                 });
             }
             document.getElementById('overall-sum').innerText = totalAllTime.toFixed(2);
@@ -1398,7 +1414,6 @@
             const listMontage = document.getElementById('list-montage-appointments');
             const pendingContainer = document.getElementById('pending-montage-container');
             
-            // 1. Zeige UNGEREICHTETE Montagen (unabhängig vom Datum)
             let pendingMontagen = orders.filter(o => o.deliveryType === 'montage' && ['offen', 'in_richtung'].includes(o.status));
             if(pendingMontagen.length > 0) {
                 pendingContainer.innerHTML = `
@@ -1423,7 +1438,6 @@
                 pendingContainer.innerHTML = '';
             }
 
-            // 2. Regulärer Terminkalender
             weekPicker.innerHTML = '';
             let today = new Date();
             for(let i=0; i<14; i++) {
@@ -1507,34 +1521,29 @@
             const container = document.getElementById('pdf-preview-container');
             const content = document.getElementById('pdf-preview-content');
             
-            // Container einblenden & Lade-Animation zeigen
             container.classList.remove('hidden');
             content.innerHTML = '<div class="flex items-center justify-center h-full w-full"><i class="fa-solid fa-spinner fa-spin text-3xl text-teal-500"></i></div>';
 
             try {
-                // PDF Base64 dekodieren
                 const arr = pdfData.base64.split(','); 
                 const bstr = atob(arr[1] || arr[0]); 
                 const u8arr = new Uint8Array(bstr.length); 
                 for(let i=0; i<bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
                 
-                // PDF mit pdf.js laden und ERSTE Seite holen
                 const loadingTask = pdfjsLib.getDocument({data: u8arr});
                 const pdfDoc = await loadingTask.promise;
                 const page = await pdfDoc.getPage(1);
                 
-                // HTML Canvas vorbereiten, auf dem die PDF gezeichnet wird
-                const viewport = page.getViewport({scale: 1.5});
+                // Größere und schärfere Skalierung für die Vorschau
+                const viewport = page.getViewport({scale: 2.0});
                 const canvas = document.createElement('canvas');
                 canvas.className = 'max-w-full h-auto shadow-md'; 
                 const ctx = canvas.getContext('2d');
                 canvas.height = viewport.height;
                 canvas.width = viewport.width;
                 
-                // PDF Seite auf Canvas rendern
                 await page.render({ canvasContext: ctx, viewport: viewport }).promise;
                 
-                // Lade-Animation entfernen und fertig gezeichnetes Bild einfügen
                 content.innerHTML = '';
                 content.appendChild(canvas);
             } catch (e) {
@@ -1546,7 +1555,7 @@
         window.removePdf = function(index) {
             window.tempPdfs.splice(index, 1); renderPdfList();
             document.getElementById('pdf-preview-container').classList.add('hidden'); 
-            document.getElementById('pdf-preview-content').innerHTML = ""; // Neues Feld leeren
+            document.getElementById('pdf-preview-content').innerHTML = "";
         };
 
         function renderPdfList() {
@@ -1571,7 +1580,7 @@
             
             document.getElementById('pdf-file-input').value = ""; 
             document.getElementById('pdf-preview-container').classList.add('hidden');
-            document.getElementById('pdf-preview-content').innerHTML = ""; // NEU HIER
+            document.getElementById('pdf-preview-content').innerHTML = "";
             renderPdfList();
 
             ['customerName', 'street', 'zip', 'city', 'phone', 'time', 'notes'].forEach(id => document.getElementById(`form-${id}`).value = '');
@@ -1589,7 +1598,7 @@
             window.tempPdfs = order.pdfs ? [...order.pdfs] : (order.pdfBase64 ? [{name: "Lieferschein.pdf", base64: order.pdfBase64}] : []);
             
             document.getElementById('pdf-preview-container').classList.add('hidden'); 
-            document.getElementById('pdf-preview-content').innerHTML = ""; // NEU HIER
+            document.getElementById('pdf-preview-content').innerHTML = "";
             renderPdfList();
 
             document.getElementById('modal-order-icon').className = "fa-solid fa-pen-to-square text-blue-400";
@@ -1615,7 +1624,7 @@
         window.closeNewOrderModal = function() { 
             document.getElementById('modal-order').classList.add('hidden');
             document.getElementById('pdf-preview-container').classList.add('hidden'); 
-            document.getElementById('pdf-preview-content').innerHTML = ""; // NEU HIER
+            document.getElementById('pdf-preview-content').innerHTML = ""; 
         };
 
         window.saveNewOrder = async function() {
@@ -1721,18 +1730,17 @@
             } catch(e) { alert("PDF konnte nicht geöffnet werden."); }
         };
 
+        // --- VERBESSERTER PDF-PARSER (Liest den Adresskasten zuverlässig aus) ---
         function setupPDFParser() {
             document.getElementById('pdf-file-input').addEventListener('change', async (e) => {
                 const files = e.target.files; if (!files || files.length === 0) return;
                 for(let i=0; i < files.length; i++) {
                     let file = files[i]; 
                     
-                    // 1. Für die Vorschau (wie im Original)
                     const r1 = new FileReader();
                     r1.onload = (ev) => { window.tempPdfs.push({ name: file.name, base64: ev.target.result }); renderPdfList(); };
                     r1.readAsDataURL(file);
 
-                    // 2. Für das Text-Auslesen (nur bei der ersten Datei)
                     if(i === 0) {
                         const r2 = new FileReader();
                         r2.onload = async (ev) => {
@@ -1743,29 +1751,54 @@
                                     const page = await pdf.getPage(pNum); 
                                     const content = await page.getTextContent(); 
                                     content.items.forEach(item => {
-                                        if (item.str.trim().length > 0) {
+                                        if (item.str && item.str.trim().length > 0) {
                                             allItems.push({ text: item.str.trim(), x: item.transform[4], y: item.transform[5] });
                                         }
                                     });
                                 }
-                                allItems.sort((a, b) => b.y - a.y);
-                                
-                                // Typ erkennen (Abholung/Montage) anhand des gesamten Textes
-                                let fullText = allItems.map(i => i.text).join(" ").toLowerCase();
+
+                                // Zeilenweise Gruppierung nach Y-Koordinate
+                                let linesMap = {};
+                                allItems.forEach(item => {
+                                    let yKey = Math.round(item.y / 6) * 6;
+                                    if (!linesMap[yKey]) linesMap[yKey] = [];
+                                    linesMap[yKey].push(item);
+                                });
+                                let sortedYKeys = Object.keys(linesMap).map(Number).sort((a,b) => b - a);
+                                let lines = sortedYKeys.map(y => {
+                                    let lineItems = linesMap[y].sort((a,b) => a.x - b.x);
+                                    return lineItems.map(i => i.text).join(" ");
+                                });
+
+                                let fullText = lines.join(" ").toLowerCase();
                                 if(fullText.includes("abholung")) document.getElementById('form-deliveryType').value = "pickup";
                                 else if(fullText.includes("montage")) document.getElementById('form-deliveryType').value = "montage";
 
-                                const plzIdx = allItems.findIndex(i => /^\d{5}$/.test(i.text));
-                                if(plzIdx !== -1) {
-                                    const plzItem = allItems[plzIdx];
-                                    document.getElementById('form-zip').value = plzItem.text;
-                                    document.getElementById('form-city').value = allItems[plzIdx+1] ? allItems[plzIdx+1].text : "";
-                                    
-                                    const block = allItems.filter(i => i.y > plzItem.y && Math.abs(i.x - plzItem.x) < 50).sort((a,b) => b.y - a.y);
-                                    if(block.length > 0) document.getElementById('form-street').value = block[0].text;
-                                    if(block.length > 1) document.getElementById('form-customerName').value = block[1].text;
+                                // Suche nach Postleitzahl und Ort im Adressblock
+                                let zipMatch = null;
+                                let zipLineIdx = -1;
+                                for(let j=0; j<lines.length; j++) {
+                                    let match = lines[j].match(/(?:D-|DE-)?(\d{5})\s+([A-Za-zÄÖÜäöüß\s\-]+)/);
+                                    if(match) {
+                                        zipMatch = match;
+                                        zipLineIdx = j;
+                                        break;
+                                    }
                                 }
-                            } catch(err) { console.error("PDF Fehler:", err); }
+
+                                if(zipMatch) {
+                                    document.getElementById('form-zip').value = zipMatch[1];
+                                    document.getElementById('form-city').value = zipMatch[2].trim();
+
+                                    // Straße und Name aus den Zeilen oberhalb ableiten
+                                    if(zipLineIdx > 0) {
+                                        document.getElementById('form-street').value = lines[zipLineIdx - 1];
+                                        if(zipLineIdx > 1) {
+                                            document.getElementById('form-customerName').value = lines[zipLineIdx - 2];
+                                        }
+                                    }
+                                }
+                            } catch(err) { console.error("PDF Parsing Fehler:", err); }
                         };
                         r2.readAsArrayBuffer(file);
                     }
