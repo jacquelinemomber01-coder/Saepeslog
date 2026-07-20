@@ -224,36 +224,12 @@
             </div>
         </div>
 
-        <!-- SEITE 4: ARCHIV -->
-        <div id="page-archiv" class="space-y-6 hidden">
-            <div>
-                <h2 class="text-2xl font-bold text-white">Lager-Archiv</h2>
-                <p class="text-sm text-slate-400">Übersicht aller abgeschlossenen Aufträge.</p>
-            </div>
-            <div class="bg-slate-800/50 rounded-2xl border border-slate-700/50 overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-slate-800 text-slate-300 text-xs uppercase tracking-wider border-b border-slate-700/50">
-                                <th class="p-4">Kunde</th>
-                                <th class="p-4">Termin & Art</th>
-                                <th class="p-4">Zahlungsart</th>
-                                <th class="p-4">Status</th>
-                                <th class="p-4 text-right">Details</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-archiv-body" class="divide-y divide-slate-700/30 text-sm"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- SEITE 5: BÜRO / ADMIN -->
-        <div id="page-admin" class="space-y-6 hidden">
+        <!-- SEITE 4: PLAN (ARBEITSPLAN FÜR ALLE SICHTBAR) -->
+        <div id="page-plan" class="space-y-6 hidden">
             <div class="flex justify-between items-end">
                 <div>
-                    <h2 class="text-2xl font-bold text-white">Büro & Personal</h2>
-                    <p class="text-sm text-slate-400">Arbeitszeiten und Planung pro Monat (25-Stunden-Woche).</p>
+                    <h2 class="text-2xl font-bold text-white">Arbeitsplan & Stunden</h2>
+                    <p class="text-sm text-slate-400">Übersicht der Arbeitszeiten (25-Stunden-Woche).</p>
                 </div>
             </div>
             
@@ -325,37 +301,79 @@
             </div>
         </div>
 
+        <!-- SEITE 5: ARCHIV -->
+        <div id="page-archiv" class="space-y-6 hidden">
+            <div>
+                <h2 class="text-2xl font-bold text-white">Lager-Archiv</h2>
+                <p class="text-sm text-slate-400">Übersicht aller abgeschlossenen Aufträge.</p>
+            </div>
+            <div class="bg-slate-800/50 rounded-2xl border border-slate-700/50 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-800 text-slate-300 text-xs uppercase tracking-wider border-b border-slate-700/50">
+                                <th class="p-4">Kunde</th>
+                                <th class="p-4">Termin & Art</th>
+                                <th class="p-4">Zahlungsart</th>
+                                <th class="p-4">Status</th>
+                                <th class="p-4 text-right">Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-archiv-body" class="divide-y divide-slate-700/30 text-sm"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SEITE 6: BÜRO / ADMIN EINSTELLUNGEN -->
+        <div id="page-admin" class="space-y-6 hidden">
+            <div class="flex justify-between items-end">
+                <div>
+                    <h2 class="text-2xl font-bold text-white">Büro & Verwaltung</h2>
+                    <p class="text-sm text-slate-400">Systemeinstellungen und PIN-Verwaltung.</p>
+                </div>
+            </div>
+            <div class="bg-slate-800/50 rounded-2xl border border-slate-700/50 p-6 space-y-4">
+                <h3 class="font-bold text-white text-lg">System-Status & Einstellungen</h3>
+                <p class="text-sm text-slate-300">Über das Zahnrad-Symbol oben rechts kannst du jederzeit die Zugangs-PINs für alle Arbeitsbereiche anpassen.</p>
+                <button onclick="openSettingsModal()" class="bg-teal-500 hover:bg-teal-600 text-slate-900 font-bold px-5 py-3 rounded-xl text-xs transition shadow-lg"><i class="fa-solid fa-gear mr-2"></i> PINs & Einstellungen öffnen</button>
+            </div>
+        </div>
+
     </main>
 
     <!-- UNTERE NAVIGATION -->
-    <nav id="bottom-nav" class="bg-slate-900/95 backdrop-blur-lg border-t border-slate-800 fixed bottom-0 left-0 right-0 z-40 px-4 py-2 shadow-2xl">
-        <div class="max-w-md mx-auto flex items-center justify-around">
+    <nav id="bottom-nav" class="bg-slate-900/95 backdrop-blur-lg border-t border-slate-800 fixed bottom-0 left-0 right-0 z-40 px-2 py-2 shadow-2xl">
+        <div class="max-w-xl mx-auto flex items-center justify-around">
             <button onclick="switchTab('logistiker')" id="tab-logistiker" class="flex flex-col items-center space-y-1 py-1.5 text-teal-400 font-semibold transition-all duration-200">
                 <i class="fa-solid fa-warehouse text-xl"></i>
-                <span class="text-[11px] tracking-wide">Logistiker</span>
+                <span class="text-[10px] tracking-wide">Logistik</span>
             </button>
             <button onclick="switchTab('fahrer')" id="tab-fahrer" class="flex flex-col items-center space-y-1 py-1.5 text-slate-400 font-medium transition-all duration-200">
                 <div class="relative">
                     <i class="fa-solid fa-truck text-xl"></i>
                     <span id="badge-fahrer-count" class="absolute -top-1.5 -right-2 bg-rose-500 text-white text-[9px] w-4.5 h-4.5 flex items-center justify-center rounded-full font-bold border border-slate-900 hidden">0</span>
                 </div>
-                <span class="text-[11px] tracking-wide">Fahrer</span>
+                <span class="text-[10px] tracking-wide">Fahrer</span>
             </button>
             <button onclick="switchTab('montage')" id="tab-montage" class="flex flex-col items-center space-y-1 py-1.5 text-slate-400 font-medium transition-all duration-200">
                 <div class="relative">
                     <i class="fa-solid fa-screwdriver-wrench text-xl"></i>
                     <span id="badge-montage-count" class="absolute -top-1.5 -right-2 bg-amber-500 text-slate-900 text-[9px] w-4.5 h-4.5 flex items-center justify-center rounded-full font-bold border border-slate-900 hidden">0</span>
                 </div>
-                <span class="text-[11px] tracking-wide">Montage</span>
+                <span class="text-[10px] tracking-wide">Montage</span>
+            </button>
+            <button onclick="switchTab('plan')" id="tab-plan" class="flex flex-col items-center space-y-1 py-1.5 text-slate-400 font-medium transition-all duration-200">
+                <i class="fa-solid fa-calendar-days text-xl"></i>
+                <span class="text-[10px] tracking-wide">Plan</span>
             </button>
             <button onclick="switchTab('archiv')" id="tab-archiv" class="flex flex-col items-center space-y-1 py-1.5 text-slate-400 font-medium transition-all duration-200">
                 <i class="fa-solid fa-list-check text-xl"></i>
-                <span class="text-[11px] tracking-wide">Archiv</span>
+                <span class="text-[10px] tracking-wide">Archiv</span>
             </button>
-            
             <button onclick="switchTab('admin')" id="tab-admin" class="hidden flex-col items-center space-y-1 py-1.5 text-slate-400 font-medium transition-all duration-200">
                 <i class="fa-solid fa-briefcase text-xl"></i>
-                <span class="text-[11px] tracking-wide">Büro</span>
+                <span class="text-[10px] tracking-wide">Büro</span>
             </button>
         </div>
     </nav>
@@ -758,7 +776,7 @@
                 if (snap.exists()) {
                     personalPlanData = snap.data();
                     migratePersonalDataFormat();
-                    if(activeTab === 'admin') renderPersonalPlan();
+                    if(activeTab === 'plan') renderPersonalPlan();
                 }
             });
         }
@@ -854,7 +872,7 @@
                 tabAdmin.classList.add('hidden'); tabAdmin.classList.remove('flex');
             }
 
-            ['btn-new-order', 'tab-logistiker', 'tab-fahrer', 'tab-montage', 'tab-archiv'].forEach(id => document.getElementById(id)?.classList.remove('hidden'));
+            ['btn-new-order', 'tab-logistiker', 'tab-fahrer', 'tab-montage', 'tab-plan', 'tab-archiv'].forEach(id => document.getElementById(id)?.classList.remove('hidden'));
 
             if (role === 'fahrer') { ['btn-new-order', 'tab-logistiker', 'tab-montage', 'tab-archiv', 'tab-admin'].forEach(id => document.getElementById(id)?.classList.add('hidden')); switchTab('fahrer'); } 
             else if (role === 'logistiker') { ['tab-fahrer', 'tab-montage', 'tab-admin'].forEach(id => document.getElementById(id)?.classList.add('hidden')); switchTab('logistiker'); } 
@@ -863,10 +881,10 @@
         }
 
         window.switchTab = function(tabName) {
-            if(activeTab === 'admin') window.updatePersonalDataFromDOM();
+            if(activeTab === 'plan') window.updatePersonalDataFromDOM();
             
             activeTab = tabName;
-            ['logistiker', 'fahrer', 'montage', 'archiv', 'admin'].forEach(t => {
+            ['logistiker', 'fahrer', 'montage', 'plan', 'archiv', 'admin'].forEach(t => {
                 const page = document.getElementById(`page-${t}`);
                 const tab = document.getElementById(`tab-${t}`);
                 if(page) page.classList.add('hidden');
@@ -891,11 +909,11 @@
             else if (activeTab === 'fahrer') renderFahrerTour();
             else if (activeTab === 'montage') renderMontageAppointments();
             else if (activeTab === 'archiv') renderArchiv();
-            else if (activeTab === 'admin') renderPersonalPlan();
+            else if (activeTab === 'plan') renderPersonalPlan();
         }
 
         // ==========================================
-        // PERSONALPLAN (AUTOMATISCHER WOCHENTAG & MONATSTRENNUNG)
+        // PERSONALPLAN (AUTOMATISCHE MONATSTAGE, FREI & SONNTAG)
         // ==========================================
         window.setPersonalPerson = function(name) {
             window.updatePersonalDataFromDOM();
@@ -933,10 +951,9 @@
                 });
             });
             
-            // Verteile Zeilen korrekt in ihre jeweiligen Monats-Buckets anhand des echten Datums
             let buckets = personalPlanData[activePerson];
             if(!buckets[window.selectedMonth]) buckets[window.selectedMonth] = [];
-            buckets[window.selectedMonth] = []; // Reset current view bucket and repopulate valid ones
+            buckets[window.selectedMonth] = [];
             
             monthRows.forEach(r => {
                 let targetMonth = r.date ? r.date.substring(0,7) : window.selectedMonth;
@@ -952,48 +969,98 @@
             const picker = document.getElementById('month-picker');
             if(picker) picker.value = window.selectedMonth;
 
+            // Automatisch alle Tage des Monats generieren, wenn noch nichts eingetragen ist
+            if (!personalPlanData[activePerson][window.selectedMonth] || personalPlanData[activePerson][window.selectedMonth].length === 0) {
+                let [year, month] = window.selectedMonth.split('-').map(Number);
+                let daysCount = new Date(year, month, 0).getDate();
+                let generatedRows = [];
+                
+                for(let d = 1; d <= daysCount; d++) {
+                    let dayStr = d < 10 ? '0' + d : d;
+                    let dateStr = `${window.selectedMonth}-${dayStr}`;
+                    let dateObj = new Date(dateStr);
+                    let daysArr = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+                    let wd = daysArr[dateObj.getDay()];
+                    let isSun = (dateObj.getDay() === 0);
+
+                    generatedRows.push({
+                        date: dateStr,
+                        weekday: wd,
+                        time: isSun ? 'Frei' : '',
+                        hours1: isSun ? '0' : '4.16',
+                        hours2: isSun ? '0' : ''
+                    });
+                }
+                personalPlanData[activePerson][window.selectedMonth] = generatedRows;
+            }
+
             let tbody = document.getElementById('table-personal-body');
             tbody.innerHTML = '';
             
             let monthRows = personalPlanData[activePerson][window.selectedMonth] || [];
-            
-            if(monthRows.length === 0) { 
-                appendPersonalRowHtml(tbody, { date: window.selectedMonth + '-01', weekday: '', time: '', hours1: '4.16', hours2: '' });
-            } else {
-                monthRows.forEach(r => appendPersonalRowHtml(tbody, r));
-            }
+            monthRows.forEach(r => appendPersonalRowHtml(tbody, r));
             window.calcPersonalSums();
         };
 
         window.updateRowWeekday = function(dateInput) {
             const tr = dateInput.closest('tr');
             const weekdayInput = tr.querySelector('.plan-weekday');
+            const hours1Input = tr.querySelector('.plan-hours1');
+            const hours2Input = tr.querySelector('.plan-hours2');
+            const timeInput = tr.querySelector('.plan-time');
+
             if (!dateInput.value) return;
             const d = new Date(dateInput.value);
             if (isNaN(d.getTime())) return;
             const days = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
             weekdayInput.value = days[d.getDay()];
             
-            // Farbliche Markierung bei Wochenende/Frei
             weekdayInput.classList.remove('bg-emerald-500/20', 'text-emerald-400', 'bg-rose-500/20', 'text-rose-400', 'border-emerald-500/50', 'border-rose-500/50');
-            if (d.getDay() === 0 || d.getDay() === 6) {
+            tr.classList.remove('border-rose-500/50', 'bg-rose-500/10', 'border-emerald-500/40', 'bg-emerald-950/20');
+
+            if (d.getDay() === 0) { // Sonntag -> Automatisch 0 Stunden und rot
                 weekdayInput.classList.add('bg-rose-500/20', 'text-rose-400', 'border-rose-500/50');
+                tr.classList.add('border-rose-500/50', 'bg-rose-500/10');
+                hours1Input.value = '0';
+                hours2Input.value = '0';
+                if(!timeInput.value || timeInput.value === '') timeInput.value = 'Frei';
+            } else if (d.getDay() === 6) {
+                weekdayInput.classList.add('bg-amber-500/20', 'text-amber-400', 'border-amber-500/50');
             }
-            window.updatePersonalDataFromDOM();
+            updatePersonalDataFromDOM();
+            calcPersonalSums();
         };
 
-        window.checkRowColor = function(input) {
+        window.checkRowTimeInput = function(input) {
+            const tr = input.closest('tr');
             const val = input.value.toLowerCase();
-            input.classList.remove('bg-emerald-500/20', 'text-emerald-400', 'bg-amber-500/20', 'text-amber-400', 'bg-rose-500/20', 'text-rose-400', 'border-emerald-500/50', 'border-amber-500/50', 'border-rose-500/50');
-            if (val.includes('frei')) { input.classList.add('bg-emerald-500/20', 'text-emerald-400', 'border-emerald-500/50'); }
-            else if (val.includes('urlaub')) { input.classList.add('bg-amber-500/20', 'text-amber-400', 'border-amber-500/50'); }
+            const hours2Input = tr.querySelector('.plan-hours2');
+            
+            input.classList.remove('bg-emerald-500/20', 'text-emerald-400', 'border-emerald-500/50', 'bg-amber-500/20', 'text-amber-400');
+            tr.classList.remove('border-emerald-500/40', 'bg-emerald-950/20');
+
+            if (val.includes('frei') || val.includes('urlaub')) {
+                hours2Input.value = '0';
+                input.classList.add('bg-emerald-500/20', 'text-emerald-400', 'border-emerald-500/50');
+                tr.classList.add('border-emerald-500/40', 'bg-emerald-950/20');
+            }
+            updatePersonalDataFromDOM();
+            calcPersonalSums();
         };
 
         function appendPersonalRowHtml(tbody, r) {
             const tr = document.createElement('tr');
-            tr.className = 'plan-row hover:bg-slate-800/80 transition flex flex-col md:table-row bg-slate-800/40 md:bg-transparent border border-slate-700/80 md:border-none rounded-2xl md:rounded-none mb-4 md:mb-0 p-3 md:p-0 relative shadow-lg md:shadow-none';
             
-            // Wenn Wochentag leer ist, aber Datum existiert, berechne Wochentag
+            let isSun = false;
+            if(r.date) {
+                let d = new Date(r.date);
+                if(!isNaN(d.getTime()) && d.getDay() === 0) isSun = true;
+            }
+            if(r.weekday === 'So') isSun = true;
+
+            let rowBgClass = isSun ? 'border-rose-500/50 bg-rose-500/10' : 'bg-slate-800/40 md:bg-transparent border border-slate-700/80 md:border-none';
+            tr.className = `plan-row hover:bg-slate-800/80 transition flex flex-col md:table-row ${rowBgClass} rounded-2xl md:rounded-none mb-4 md:mb-0 p-3 md:p-0 relative shadow-lg md:shadow-none`;
+            
             let initialWeekday = r.weekday;
             if(!initialWeekday && r.date) {
                 const d = new Date(r.date);
@@ -1002,6 +1069,9 @@
                     initialWeekday = days[d.getDay()];
                 }
             }
+
+            let isFreeTime = r.time && (r.time.toLowerCase().includes('frei') || r.time.toLowerCase().includes('urlaub'));
+            let timeInputClass = isFreeTime ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-slate-900 border-slate-700 text-slate-200';
 
             tr.innerHTML = `
                 <td class="absolute top-3 right-3 md:static md:table-cell p-0 md:p-2 md:border-b border-slate-700/50 text-center z-10">
@@ -1015,26 +1085,25 @@
                 
                 <td class="flex md:table-cell flex-col p-1.5 md:p-2 md:border-b border-slate-700/50 w-full">
                     <span class="md:hidden text-[10px] font-bold text-slate-400 uppercase mb-1 pl-1">Wochentag</span>
-                    <input type="text" readonly class="plan-cell-input plan-weekday w-full bg-slate-900/80 border border-slate-700 rounded-xl p-2.5 md:p-2 text-teal-300 text-xs md:text-sm text-center font-bold outline-none" value="${initialWeekday || ''}">
+                    <input type="text" readonly class="plan-cell-input plan-weekday w-full ${isSun ? 'bg-rose-500/20 text-rose-400 border-rose-500/50' : 'bg-slate-900/80 text-teal-300 border-slate-700'} rounded-xl p-2.5 md:p-2 text-xs md:text-sm text-center font-bold outline-none" value="${initialWeekday || ''}">
                 </td>
                 
                 <td class="flex md:table-cell flex-col p-1.5 md:p-2 md:border-b border-slate-700/50 w-full pb-3 md:pb-2">
-                    <span class="md:hidden text-[10px] font-bold text-slate-400 uppercase mb-1 pl-1">Arbeitszeit (Von - Bis)</span>
-                    <input type="text" placeholder="08:00 - 16:00" class="plan-cell-input plan-time w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 md:p-2 text-slate-200 text-xs md:text-sm focus:border-teal-500 outline-none" value="${r.time || ''}" onkeyup="checkRowColor(this); updatePersonalDataFromDOM()">
+                    <span class="md:hidden text-[10px] font-bold text-slate-400 uppercase mb-1 pl-1">Arbeitszeit / Status (Von-Bis oder Frei)</span>
+                    <input type="text" placeholder="08:00 - 16:00 oder Frei" class="plan-cell-input plan-time w-full ${timeInputClass} border rounded-xl p-2.5 md:p-2 text-xs md:text-sm focus:border-teal-500 outline-none" value="${r.time || ''}" onkeyup="checkRowTimeInput(this); updatePersonalDataFromDOM()">
                 </td>
                 
                 <td class="flex md:table-cell justify-between items-center p-2.5 md:p-2 md:border-b border-slate-700/50 mt-1 md:mt-0 bg-slate-900/60 md:bg-transparent rounded-t-xl md:rounded-none">
                     <span class="md:hidden text-[10px] font-bold text-teal-400 uppercase pl-1">Erbrachte Stunden</span>
-                    <input type="number" step="0.25" min="0" placeholder="0.0" class="plan-hours2 w-24 md:w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-teal-300 text-sm font-bold text-center focus:border-teal-500 outline-none shadow-inner" value="${r.hours2 || ''}" oninput="calcPersonalSums(); updatePersonalDataFromDOM()">
+                    <input type="number" step="0.25" min="0" placeholder="0.0" class="plan-hours2 w-24 md:w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-teal-300 text-sm font-bold text-center focus:border-teal-500 outline-none shadow-inner" value="${r.hours2 !== undefined ? r.hours2 : (isSun ? '0' : '')}" oninput="calcPersonalSums(); updatePersonalDataFromDOM()">
                 </td>
                 
                 <td class="flex md:table-cell justify-between items-center p-2.5 md:p-2 md:border-b border-slate-700/50 bg-slate-900/60 md:bg-transparent rounded-b-xl md:rounded-none border-t border-slate-700 md:border-t-0">
                     <span class="md:hidden text-[10px] font-bold text-teal-400 uppercase pl-1">Soll-Stunden</span>
-                    <input type="number" step="0.01" min="0" placeholder="4.16" class="plan-hours1 w-24 md:w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-teal-300 text-sm font-bold text-center focus:border-teal-500 outline-none shadow-inner" value="${r.hours1 || '4.16'}" oninput="calcPersonalSums(); updatePersonalDataFromDOM()">
+                    <input type="number" step="0.01" min="0" placeholder="4.16" class="plan-hours1 w-24 md:w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-teal-300 text-sm font-bold text-center focus:border-teal-500 outline-none shadow-inner" value="${r.hours1 !== undefined ? r.hours1 : (isSun ? '0' : '4.16')}" oninput="calcPersonalSums(); updatePersonalDataFromDOM()">
                 </td>
             `;
             tbody.appendChild(tr);
-            window.checkRowColor(tr.querySelector('.plan-weekday'));
         }
 
         window.addPersonalRow = function() {
@@ -1088,7 +1157,7 @@
             } else {
                 localStorage.setItem('saelog_personalplan', JSON.stringify(personalPlanData));
             }
-            alert(`Personalplan für ${activePerson} erfolgreich gespeichert!`);
+            alert(`Arbeitsplan für ${activePerson} erfolgreich gespeichert!`);
         };
 
 
