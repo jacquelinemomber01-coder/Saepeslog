@@ -253,7 +253,7 @@
             <div class="flex justify-between items-end">
                 <div>
                     <h2 class="text-2xl font-bold text-white">Büro & Personal</h2>
-                    <p class="text-sm text-slate-400">Arbeitszeiten und Planung pro Monat.</p>
+                    <p class="text-sm text-slate-400">Arbeitszeiten und Planung pro Monat (25-Stunden-Woche).</p>
                 </div>
             </div>
             
@@ -268,7 +268,7 @@
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
                     <h3 class="font-bold text-white text-lg flex items-center">Plan für <span id="pers-name-display" class="text-teal-400 ml-1.5">Helga</span></h3>
                     <div class="flex items-center gap-2">
-                        <!-- MONATS-AUSWAHL ALS ECHTES INPUT TYPE MONTH -->
+                        <!-- MONATS-AUSWAHL -->
                         <div class="flex items-center bg-slate-900 rounded-xl border border-slate-700 px-2 overflow-hidden">
                             <i class="fa-solid fa-calendar-days text-slate-400 text-xs ml-2"></i>
                             <input type="month" id="month-picker" onchange="changePersonalMonth(this.value)" class="bg-transparent text-white font-bold text-sm px-2 py-2 outline-none cursor-pointer">
@@ -283,10 +283,10 @@
                         <thead class="hidden md:table-header-group">
                             <tr class="bg-slate-900 text-slate-400 text-[11px] uppercase tracking-wider border-b border-slate-700/80">
                                 <th class="p-3 w-36">Datum</th>
-                                <th class="p-3 w-32">Wochentag</th>
-                                <th class="p-3">Arbeitszeit</th>
-                                <th class="p-3 w-32 text-center text-teal-300">Durchschn. Stunden</th>
-                                <th class="p-3 w-28 text-center text-teal-300">Stunden</th>
+                                <th class="p-3 w-28">Wochentag</th>
+                                <th class="p-3 w-48">Arbeitszeit (Von - Bis)</th>
+                                <th class="p-3 w-28 text-center text-teal-300">Erbrachte Std.</th>
+                                <th class="p-3 w-28 text-center text-teal-300">Soll-Std.</th>
                                 <th class="p-3 w-12 text-center">Entf.</th>
                             </tr>
                         </thead>
@@ -299,12 +299,12 @@
                                 <td class="block md:hidden p-3 text-center tracking-wide text-slate-300 text-xs border-b border-slate-700/50">SUMME FÜR DIESEN MONAT:</td>
                                 
                                 <td class="flex md:table-cell justify-between items-center p-3 md:p-4 border-b border-slate-700/50 md:border-none">
-                                    <span class="md:hidden text-xs text-slate-400 uppercase">Durchschn.</span>
-                                    <span class="text-teal-400 text-lg" id="plan-sum-h1">0.00</span>
+                                    <span class="md:hidden text-xs text-slate-400 uppercase">Erbrachte Std.</span>
+                                    <span class="text-teal-400 text-lg" id="plan-sum-h2">0.00</span>
                                 </td>
                                 <td class="flex md:table-cell justify-between items-center p-3 md:p-4">
-                                    <span class="md:hidden text-xs text-slate-400 uppercase">Stunden</span>
-                                    <span class="text-teal-400 text-lg" id="plan-sum-h2">0.00</span>
+                                    <span class="md:hidden text-xs text-slate-400 uppercase">Soll-Std.</span>
+                                    <span class="text-teal-400 text-lg" id="plan-sum-h1">0.00</span>
                                 </td>
                                 <td class="hidden md:table-cell"></td>
                             </tr>
@@ -318,7 +318,7 @@
                 <div class="mt-6 p-4 bg-slate-900 border border-slate-700 rounded-xl flex flex-col sm:flex-row justify-between items-center shadow-inner">
                     <div class="flex items-center space-x-3 mb-2 sm:mb-0">
                         <div class="bg-teal-500/10 text-teal-400 p-2 rounded-lg"><i class="fa-solid fa-chart-line"></i></div>
-                        <span class="text-slate-300 font-bold uppercase tracking-wider text-xs">Gesamtstunden (Alle Monate erfasst)</span>
+                        <span class="text-slate-300 font-bold uppercase tracking-wider text-xs">Gesamtstunden Erbracht (Alle Monate)</span>
                     </div>
                     <span class="text-teal-400 font-black text-2xl tracking-wide"><span id="overall-sum">0.00</span> <span class="text-sm font-bold text-slate-500">h</span></span>
                 </div>
@@ -443,7 +443,7 @@
                 <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             <div class="p-6 space-y-4">
-                <p class="text-xs text-slate-400 mb-2">Hier kannst du die Passwörter für alle Bereiche anpassen. Die Änderung wird sofort für alle Geräte übernommen.</p>
+                <p class="text-xs text-slate-400 mb-2">Hier kannst du die Passwörter für alle Bereiche anpassen.</p>
                 <div>
                     <label class="block text-xs font-bold text-slate-300 mb-1">Büro / Admin PIN</label>
                     <input type="text" id="set-pin-admin" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:border-teal-500 outline-none font-bold tracking-widest">
@@ -511,7 +511,7 @@
             </div>
             <div class="p-6 overflow-y-auto space-y-5 no-scrollbar">
                 
-                <!-- PDF Upload & Vorschau (VERGRÖSSERT AUF 500px HÖHE) -->
+                <!-- PDF Upload & Vorschau -->
                 <div>
                     <div id="pdf-upload-section" class="border-2 border-dashed border-slate-600/60 hover:border-teal-500/80 rounded-xl p-5 text-center bg-slate-900/40 cursor-pointer relative group">
                         <input type="file" id="pdf-file-input" accept="application/pdf" multiple class="absolute inset-0 opacity-0 cursor-pointer">
@@ -570,7 +570,7 @@
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Telefon (Manuell erfassen)</label>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Telefon</label>
                             <input type="text" id="form-phone" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-teal-500">
                         </div>
                         <div>
@@ -895,7 +895,7 @@
         }
 
         // ==========================================
-        // PERSONALPLAN (STRENG GETRENNTE MONATE)
+        // PERSONALPLAN (AUTOMATISCHER WOCHENTAG & MONATSTRENNUNG)
         // ==========================================
         window.setPersonalPerson = function(name) {
             window.updatePersonalDataFromDOM();
@@ -928,14 +928,15 @@
                     date: tr.querySelector('.plan-date').value,
                     weekday: tr.querySelector('.plan-weekday').value,
                     time: tr.querySelector('.plan-time').value,
-                    hours1: tr.querySelector('.plan-hours1').value,
-                    hours2: tr.querySelector('.plan-hours2').value
+                    hours1: tr.querySelector('.plan-hours1').value, // Soll
+                    hours2: tr.querySelector('.plan-hours2').value  // Ist
                 });
             });
             
-            // Intelligent sort into correct buckets based on their date
+            // Verteile Zeilen korrekt in ihre jeweiligen Monats-Buckets anhand des echten Datums
             let buckets = personalPlanData[activePerson];
-            buckets[window.selectedMonth] = [];
+            if(!buckets[window.selectedMonth]) buckets[window.selectedMonth] = [];
+            buckets[window.selectedMonth] = []; // Reset current view bucket and repopulate valid ones
             
             monthRows.forEach(r => {
                 let targetMonth = r.date ? r.date.substring(0,7) : window.selectedMonth;
@@ -957,26 +958,51 @@
             let monthRows = personalPlanData[activePerson][window.selectedMonth] || [];
             
             if(monthRows.length === 0) { 
-                appendPersonalRowHtml(tbody, { date: window.selectedMonth + '-01', weekday: '', time: '', hours1: '', hours2: '' });
+                appendPersonalRowHtml(tbody, { date: window.selectedMonth + '-01', weekday: '', time: '', hours1: '4.16', hours2: '' });
             } else {
                 monthRows.forEach(r => appendPersonalRowHtml(tbody, r));
             }
             window.calcPersonalSums();
         };
 
+        window.updateRowWeekday = function(dateInput) {
+            const tr = dateInput.closest('tr');
+            const weekdayInput = tr.querySelector('.plan-weekday');
+            if (!dateInput.value) return;
+            const d = new Date(dateInput.value);
+            if (isNaN(d.getTime())) return;
+            const days = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+            weekdayInput.value = days[d.getDay()];
+            
+            // Farbliche Markierung bei Wochenende/Frei
+            weekdayInput.classList.remove('bg-emerald-500/20', 'text-emerald-400', 'bg-rose-500/20', 'text-rose-400', 'border-emerald-500/50', 'border-rose-500/50');
+            if (d.getDay() === 0 || d.getDay() === 6) {
+                weekdayInput.classList.add('bg-rose-500/20', 'text-rose-400', 'border-rose-500/50');
+            }
+            window.updatePersonalDataFromDOM();
+        };
+
         window.checkRowColor = function(input) {
             const val = input.value.toLowerCase();
             input.classList.remove('bg-emerald-500/20', 'text-emerald-400', 'bg-amber-500/20', 'text-amber-400', 'bg-rose-500/20', 'text-rose-400', 'border-emerald-500/50', 'border-amber-500/50', 'border-rose-500/50');
-            
             if (val.includes('frei')) { input.classList.add('bg-emerald-500/20', 'text-emerald-400', 'border-emerald-500/50'); }
             else if (val.includes('urlaub')) { input.classList.add('bg-amber-500/20', 'text-amber-400', 'border-amber-500/50'); }
-            else if (val.includes('sonntag')) { input.classList.add('bg-rose-500/20', 'text-rose-400', 'border-rose-500/50'); }
         };
 
         function appendPersonalRowHtml(tbody, r) {
             const tr = document.createElement('tr');
             tr.className = 'plan-row hover:bg-slate-800/80 transition flex flex-col md:table-row bg-slate-800/40 md:bg-transparent border border-slate-700/80 md:border-none rounded-2xl md:rounded-none mb-4 md:mb-0 p-3 md:p-0 relative shadow-lg md:shadow-none';
             
+            // Wenn Wochentag leer ist, aber Datum existiert, berechne Wochentag
+            let initialWeekday = r.weekday;
+            if(!initialWeekday && r.date) {
+                const d = new Date(r.date);
+                if(!isNaN(d.getTime())) {
+                    const days = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+                    initialWeekday = days[d.getDay()];
+                }
+            }
+
             tr.innerHTML = `
                 <td class="absolute top-3 right-3 md:static md:table-cell p-0 md:p-2 md:border-b border-slate-700/50 text-center z-10">
                     <button onclick="this.closest('tr').remove(); updatePersonalDataFromDOM(); calcPersonalSums();" class="text-rose-500 hover:text-rose-400 bg-slate-900 md:bg-transparent hover:bg-rose-500/10 p-2.5 rounded-xl transition border border-slate-700 md:border-none shadow-sm md:shadow-none"><i class="fa-solid fa-trash-can"></i></button>
@@ -984,32 +1010,31 @@
 
                 <td class="flex md:table-cell flex-col p-1.5 md:p-2 md:border-b border-slate-700/50 w-full pr-14 md:pr-2">
                     <span class="md:hidden text-[10px] font-bold text-slate-400 uppercase mb-1 pl-1">Datum</span>
-                    <input type="date" class="plan-date w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 md:p-2 text-slate-200 text-xs md:text-sm focus:border-teal-500 outline-none" value="${r.date || ''}" onchange="updatePersonalDataFromDOM()">
+                    <input type="date" class="plan-date w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 md:p-2 text-slate-200 text-xs md:text-sm focus:border-teal-500 outline-none" value="${r.date || ''}" onchange="updateRowWeekday(this)">
                 </td>
                 
                 <td class="flex md:table-cell flex-col p-1.5 md:p-2 md:border-b border-slate-700/50 w-full">
                     <span class="md:hidden text-[10px] font-bold text-slate-400 uppercase mb-1 pl-1">Wochentag</span>
-                    <input type="text" placeholder="Mo, Di..." class="plan-cell-input plan-weekday w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 md:p-2 text-slate-200 text-xs md:text-sm focus:border-teal-500 outline-none font-bold" value="${r.weekday || ''}" onkeyup="checkRowColor(this); updatePersonalDataFromDOM()">
+                    <input type="text" readonly class="plan-cell-input plan-weekday w-full bg-slate-900/80 border border-slate-700 rounded-xl p-2.5 md:p-2 text-teal-300 text-xs md:text-sm text-center font-bold outline-none" value="${initialWeekday || ''}">
                 </td>
                 
                 <td class="flex md:table-cell flex-col p-1.5 md:p-2 md:border-b border-slate-700/50 w-full pb-3 md:pb-2">
-                    <span class="md:hidden text-[10px] font-bold text-slate-400 uppercase mb-1 pl-1">Arbeitszeit</span>
+                    <span class="md:hidden text-[10px] font-bold text-slate-400 uppercase mb-1 pl-1">Arbeitszeit (Von - Bis)</span>
                     <input type="text" placeholder="08:00 - 16:00" class="plan-cell-input plan-time w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 md:p-2 text-slate-200 text-xs md:text-sm focus:border-teal-500 outline-none" value="${r.time || ''}" onkeyup="checkRowColor(this); updatePersonalDataFromDOM()">
                 </td>
                 
                 <td class="flex md:table-cell justify-between items-center p-2.5 md:p-2 md:border-b border-slate-700/50 mt-1 md:mt-0 bg-slate-900/60 md:bg-transparent rounded-t-xl md:rounded-none">
-                    <span class="md:hidden text-[10px] font-bold text-teal-400 uppercase pl-1">Durchschn. Stunden</span>
-                    <input type="number" step="0.25" min="0" placeholder="0.0" class="plan-hours1 w-24 md:w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-teal-300 text-sm font-bold text-center focus:border-teal-500 outline-none shadow-inner" value="${r.hours1 || ''}" oninput="calcPersonalSums(); updatePersonalDataFromDOM()">
+                    <span class="md:hidden text-[10px] font-bold text-teal-400 uppercase pl-1">Erbrachte Stunden</span>
+                    <input type="number" step="0.25" min="0" placeholder="0.0" class="plan-hours2 w-24 md:w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-teal-300 text-sm font-bold text-center focus:border-teal-500 outline-none shadow-inner" value="${r.hours2 || ''}" oninput="calcPersonalSums(); updatePersonalDataFromDOM()">
                 </td>
                 
                 <td class="flex md:table-cell justify-between items-center p-2.5 md:p-2 md:border-b border-slate-700/50 bg-slate-900/60 md:bg-transparent rounded-b-xl md:rounded-none border-t border-slate-700 md:border-t-0">
-                    <span class="md:hidden text-[10px] font-bold text-teal-400 uppercase pl-1">Stunden (Echt)</span>
-                    <input type="number" step="0.25" min="0" placeholder="0.0" class="plan-hours2 w-24 md:w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-teal-300 text-sm font-bold text-center focus:border-teal-500 outline-none shadow-inner" value="${r.hours2 || ''}" oninput="calcPersonalSums(); updatePersonalDataFromDOM()">
+                    <span class="md:hidden text-[10px] font-bold text-teal-400 uppercase pl-1">Soll-Stunden</span>
+                    <input type="number" step="0.01" min="0" placeholder="4.16" class="plan-hours1 w-24 md:w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-teal-300 text-sm font-bold text-center focus:border-teal-500 outline-none shadow-inner" value="${r.hours1 || '4.16'}" oninput="calcPersonalSums(); updatePersonalDataFromDOM()">
                 </td>
             `;
             tbody.appendChild(tr);
             window.checkRowColor(tr.querySelector('.plan-weekday'));
-            window.checkRowColor(tr.querySelector('.plan-time'));
         }
 
         window.addPersonalRow = function() {
@@ -1030,7 +1055,7 @@
             }
 
             const tbody = document.getElementById('table-personal-body');
-            appendPersonalRowHtml(tbody, { date: newDateStr, weekday: '', time: '', hours1: '', hours2: '' });
+            appendPersonalRowHtml(tbody, { date: newDateStr, weekday: '', time: '', hours1: '4.16', hours2: '' });
             window.updatePersonalDataFromDOM();
         };
 
@@ -1534,7 +1559,6 @@
                 const pdfDoc = await loadingTask.promise;
                 const page = await pdfDoc.getPage(1);
                 
-                // Größere und schärfere Skalierung für die Vorschau
                 const viewport = page.getViewport({scale: 2.0});
                 const canvas = document.createElement('canvas');
                 canvas.className = 'max-w-full h-auto shadow-md'; 
@@ -1730,7 +1754,7 @@
             } catch(e) { alert("PDF konnte nicht geöffnet werden."); }
         };
 
-        // --- VERBESSERTER PDF-PARSER (Liest den Adresskasten zuverlässig aus) ---
+        // --- PDF-PARSER ---
         function setupPDFParser() {
             document.getElementById('pdf-file-input').addEventListener('change', async (e) => {
                 const files = e.target.files; if (!files || files.length === 0) return;
@@ -1757,7 +1781,6 @@
                                     });
                                 }
 
-                                // Zeilenweise Gruppierung nach Y-Koordinate
                                 let linesMap = {};
                                 allItems.forEach(item => {
                                     let yKey = Math.round(item.y / 6) * 6;
@@ -1774,7 +1797,6 @@
                                 if(fullText.includes("abholung")) document.getElementById('form-deliveryType').value = "pickup";
                                 else if(fullText.includes("montage")) document.getElementById('form-deliveryType').value = "montage";
 
-                                // Suche nach Postleitzahl und Ort im Adressblock
                                 let zipMatch = null;
                                 let zipLineIdx = -1;
                                 for(let j=0; j<lines.length; j++) {
@@ -1790,7 +1812,6 @@
                                     document.getElementById('form-zip').value = zipMatch[1];
                                     document.getElementById('form-city').value = zipMatch[2].trim();
 
-                                    // Straße und Name aus den Zeilen oberhalb ableiten
                                     if(zipLineIdx > 0) {
                                         document.getElementById('form-street').value = lines[zipLineIdx - 1];
                                         if(zipLineIdx > 1) {
