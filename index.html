@@ -45,6 +45,7 @@
             border-radius: 50%;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.5);
         }
+        .plan-cell-input { transition: background-color 0.2s ease, color 0.2s ease; }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col selection:bg-teal-500 selection:text-white pb-24">
@@ -207,7 +208,11 @@
                     <p class="text-sm text-slate-400">Termine, Status und Foto-Dokumentation.</p>
                 </div>
             </div>
-            <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-3 flex items-center space-x-2 overflow-x-auto no-scrollbar shadow-lg">
+            
+            <!-- Container für UNGEREICHTETE Montagen -->
+            <div id="pending-montage-container"></div>
+
+            <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-3 flex items-center space-x-2 overflow-x-auto no-scrollbar shadow-lg mt-4">
                 <div class="flex space-x-2 flex-grow" id="montage-week-picker"></div>
             </div>
             <div class="space-y-4 pt-2">
@@ -243,11 +248,13 @@
             </div>
         </div>
 
-        <!-- SEITE 5: BÜRO / ADMIN (NEU) -->
+        <!-- SEITE 5: BÜRO / ADMIN -->
         <div id="page-admin" class="space-y-6 hidden">
-            <div>
-                <h2 class="text-2xl font-bold text-white">Büro & Personal</h2>
-                <p class="text-sm text-slate-400">Arbeitszeiten und Planung wie in Excel.</p>
+            <div class="flex justify-between items-end">
+                <div>
+                    <h2 class="text-2xl font-bold text-white">Büro & Personal</h2>
+                    <p class="text-sm text-slate-400">Arbeitszeiten und Planung pro Monat.</p>
+                </div>
             </div>
             
             <!-- Personenauswahl Tabs -->
@@ -256,40 +263,67 @@
                 <button onclick="setPersonalPerson('Jacky')" id="btn-pers-jacky" class="bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold px-6 py-2.5 rounded-t-xl transition">Jacky</button>
             </div>
 
-            <!-- Excel-Tabelle -->
+            <!-- Excel-Tabelle & Monatsauswahl -->
             <div class="bg-slate-800/50 rounded-b-2xl rounded-tr-2xl border border-slate-700/50 p-4 md:p-5 overflow-hidden shadow-lg">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-bold text-white text-lg">Plan für <span id="pers-name-display" class="text-teal-400">Helga</span></h3>
-                    <button onclick="savePersonalPlan()" class="bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-bold px-4 py-2 rounded-xl text-xs transition shadow-lg flex items-center"><i class="fa-solid fa-floppy-disk mr-1.5"></i> Plan Speichern</button>
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+                    <h3 class="font-bold text-white text-lg flex items-center">Plan für <span id="pers-name-display" class="text-teal-400 ml-1.5">Helga</span></h3>
+                    <div class="flex items-center gap-2">
+                        <!-- MONATS-AUSWAHL -->
+                        <div class="flex items-center bg-slate-900 rounded-xl border border-slate-700 px-2 overflow-hidden">
+                            <i class="fa-solid fa-calendar-days text-slate-400 text-xs ml-2"></i>
+                            <select id="month-select" onchange="changePersonalMonth(this.value)" class="bg-transparent text-white font-bold text-sm px-2 py-2 outline-none cursor-pointer">
+                                <!-- Wird via JS befüllt -->
+                            </select>
+                        </div>
+                        <button onclick="savePersonalPlan()" class="bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-bold px-4 py-2 rounded-xl text-xs transition shadow-lg flex items-center"><i class="fa-solid fa-floppy-disk mr-1.5"></i> Speichern</button>
+                    </div>
                 </div>
                 
-                <div class="overflow-x-auto border border-slate-700/80 rounded-xl">
-                    <table class="w-full text-left border-collapse min-w-[700px]">
-                        <thead>
+                <!-- RESPONSIVE TABELLE -->
+                <div class="overflow-x-hidden md:overflow-x-auto border-none md:border md:border-slate-700/80 rounded-xl">
+                    <table class="w-full text-left border-collapse block md:table">
+                        <thead class="hidden md:table-header-group">
                             <tr class="bg-slate-900 text-slate-400 text-[11px] uppercase tracking-wider border-b border-slate-700/80">
                                 <th class="p-3 w-36">Datum</th>
                                 <th class="p-3 w-32">Wochentag</th>
                                 <th class="p-3">Arbeitszeit</th>
-                                <th class="p-3 w-28 text-center">Stunden 1</th>
-                                <th class="p-3 w-28 text-center">Stunden 2</th>
+                                <th class="p-3 w-32 text-center text-teal-300">Durchschn. Stunden</th>
+                                <th class="p-3 w-28 text-center text-teal-300">Stunden</th>
                                 <th class="p-3 w-12 text-center">Entf.</th>
                             </tr>
                         </thead>
-                        <tbody id="table-personal-body" class="divide-y divide-slate-700/50 text-sm">
+                        <tbody id="table-personal-body" class="block md:table-row-group divide-y divide-transparent md:divide-slate-700/50 text-sm">
                             <!-- Zeilen werden hier via JavaScript eingefügt -->
                         </tbody>
-                        <tfoot>
-                            <tr class="bg-slate-900/80 font-bold text-white border-t-2 border-teal-500/50">
-                                <td colspan="3" class="p-4 text-right tracking-wide text-slate-300">GESAMTSUMME STUNDEN:</td>
-                                <td class="p-4 text-center text-teal-400 text-lg" id="plan-sum-h1">0.00</td>
-                                <td class="p-4 text-center text-teal-400 text-lg" id="plan-sum-h2">0.00</td>
-                                <td></td>
+                        <tfoot class="block md:table-footer-group mt-6 md:mt-0">
+                            <tr class="block md:table-row bg-slate-900/80 font-bold text-white border-t-2 border-teal-500/50 rounded-xl md:rounded-none shadow-lg md:shadow-none">
+                                <td colspan="3" class="hidden md:table-cell p-4 text-right tracking-wide text-slate-300">SUMME FÜR DIESEN MONAT:</td>
+                                <td class="block md:hidden p-3 text-center tracking-wide text-slate-300 text-xs border-b border-slate-700/50">SUMME FÜR DIESEN MONAT:</td>
+                                
+                                <td class="flex md:table-cell justify-between items-center p-3 md:p-4 border-b border-slate-700/50 md:border-none">
+                                    <span class="md:hidden text-xs text-slate-400 uppercase">Durchschn.</span>
+                                    <span class="text-teal-400 text-lg" id="plan-sum-h1">0.00</span>
+                                </td>
+                                <td class="flex md:table-cell justify-between items-center p-3 md:p-4">
+                                    <span class="md:hidden text-xs text-slate-400 uppercase">Stunden</span>
+                                    <span class="text-teal-400 text-lg" id="plan-sum-h2">0.00</span>
+                                </td>
+                                <td class="hidden md:table-cell"></td>
                             </tr>
                         </tfoot>
                     </table>
                 </div>
                 
-                <button onclick="addPersonalRow()" class="mt-4 bg-slate-700/50 hover:bg-slate-700 text-teal-400 font-bold px-4 py-3 rounded-xl text-xs transition border border-slate-600 border-dashed w-full flex justify-center items-center"><i class="fa-solid fa-plus mr-1.5"></i> Weitere Zeile hinzufügen</button>
+                <button onclick="addPersonalRow()" class="mt-4 bg-slate-700/50 hover:bg-slate-700 text-teal-400 font-bold px-4 py-3 rounded-xl text-xs transition border border-slate-600 border-dashed w-full flex justify-center items-center"><i class="fa-solid fa-plus mr-1.5"></i> Weitere Zeile (Tag) hinzufügen</button>
+
+                <!-- GESAMTSTUNDEN ÜBER ALLE MONATE -->
+                <div class="mt-6 p-4 bg-slate-900 border border-slate-700 rounded-xl flex flex-col sm:flex-row justify-between items-center shadow-inner">
+                    <div class="flex items-center space-x-3 mb-2 sm:mb-0">
+                        <div class="bg-teal-500/10 text-teal-400 p-2 rounded-lg"><i class="fa-solid fa-chart-line"></i></div>
+                        <span class="text-slate-300 font-bold uppercase tracking-wider text-xs">Gesamtstunden (Alle Monate erfasst)</span>
+                    </div>
+                    <span class="text-teal-400 font-black text-2xl tracking-wide"><span id="overall-sum">0.00</span> <span class="text-sm font-bold text-slate-500">h</span></span>
+                </div>
             </div>
         </div>
 
@@ -310,7 +344,10 @@
                 <span class="text-[11px] tracking-wide">Fahrer</span>
             </button>
             <button onclick="switchTab('montage')" id="tab-montage" class="flex flex-col items-center space-y-1 py-1.5 text-slate-400 font-medium transition-all duration-200">
-                <i class="fa-solid fa-screwdriver-wrench text-xl"></i>
+                <div class="relative">
+                    <i class="fa-solid fa-screwdriver-wrench text-xl"></i>
+                    <span id="badge-montage-count" class="absolute -top-1.5 -right-2 bg-amber-500 text-slate-900 text-[9px] w-4.5 h-4.5 flex items-center justify-center rounded-full font-bold border border-slate-900 hidden">0</span>
+                </div>
                 <span class="text-[11px] tracking-wide">Montage</span>
             </button>
             <button onclick="switchTab('archiv')" id="tab-archiv" class="flex flex-col items-center space-y-1 py-1.5 text-slate-400 font-medium transition-all duration-200">
@@ -318,14 +355,13 @@
                 <span class="text-[11px] tracking-wide">Archiv</span>
             </button>
             
-            <!-- NEUER BÜRO TAB (nur sichtbar wenn Admin) -->
             <button onclick="switchTab('admin')" id="tab-admin" class="hidden flex-col items-center space-y-1 py-1.5 text-slate-400 font-medium transition-all duration-200">
                 <i class="fa-solid fa-briefcase text-xl"></i>
                 <span class="text-[11px] tracking-wide">Büro</span>
             </button>
         </div>
     </nav>
-
+    
     <!-- MODAL: ROLLENAUSWAHL -->
     <div id="modal-role-select" class="fixed inset-0 bg-slate-950 z-[100] flex items-center justify-center p-4 hidden">
         <div class="bg-slate-800 border border-slate-700/80 rounded-3xl w-full max-w-lg p-6 space-y-5 shadow-2xl">
@@ -488,14 +524,14 @@
                         </div>
                     </div>
                     
-                    <!-- Große Vorschau (standardmäßig versteckt) -->
-                    <div id="pdf-preview-container" class="hidden w-full h-80 border border-slate-700 rounded-xl overflow-hidden relative shadow-inner bg-white mt-4">
+                    <!-- NEUER PDF PREVIEW CONTAINER MIT CANVAS -->
+                    <div id="pdf-preview-container" class="hidden w-full h-80 border border-slate-700 rounded-xl overflow-hidden relative shadow-inner bg-slate-200 mt-4">
                         <div class="absolute top-2 left-2 bg-slate-900/80 text-white text-[10px] uppercase font-bold px-2 py-1 rounded backdrop-blur z-10">Vorschau</div>
                         <button type="button" onclick="document.getElementById('pdf-preview-container').classList.add('hidden')" class="absolute top-2 right-2 bg-rose-500 hover:bg-rose-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold shadow-lg z-10 transition"><i class="fa-solid fa-xmark mr-1"></i> Schließen</button>
-                        <iframe id="pdf-preview-iframe" class="w-full h-full border-0 relative z-0"></iframe>
+                        
+                        <div id="pdf-preview-content" class="w-full h-full overflow-y-auto flex justify-center bg-slate-200 relative z-0 p-2 pt-10"></div>
                     </div>
 
-                    <!-- Liste der hochgeladenen PDFs -->
                     <div id="pdf-list-container" class="hidden flex flex-col gap-2 mt-3"></div>
                 </div>
                 
@@ -537,7 +573,7 @@
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Telefon</label>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Telefon (Manuell erfassen)</label>
                             <input type="text" id="form-phone" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-teal-500">
                         </div>
                         <div>
@@ -644,6 +680,7 @@
         // --- Personalplan Variablen ---
         let personalPlanData = { Helga: [], Jacky: [] };
         let activePerson = 'Helga';
+        window.selectedMonth = new Date().toISOString().substring(0,7); // YYYY-MM
 
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -671,7 +708,7 @@
                         document.getElementById('statusText').innerText = "Live Online";
                         listenToDatabase();
                         listenToPins(); 
-                        listenToPersonalPlan(); // NEU: Personalplan aus DB laden
+                        listenToPersonalPlan(); 
                     } else fallbackToLocal();
                 });
             } catch (error) { fallbackToLocal(); }
@@ -681,10 +718,8 @@
             isFirebaseConnected = false;
             document.getElementById('statusText').innerText = "Lokal-Modus";
             orders = JSON.parse(localStorage.getItem('saelog_orders') || "[]");
-            // NEU: Personalplan lokal laden
             const storedPersonal = localStorage.getItem('saelog_personalplan');
             if(storedPersonal) { try { personalPlanData = JSON.parse(storedPersonal); } catch(e) {} }
-            
             renderAll();
         }
 
@@ -692,14 +727,9 @@
         function listenToPins() {
             if (!db) return;
             if (dbUnsubscribePins) dbUnsubscribePins();
-            
             dbUnsubscribePins = onSnapshot(doc(db, 'artifacts', 'saelog-logistik', 'public', 'settings', 'pins'), (snap) => {
-                if (snap.exists()) {
-                    PINS = snap.data();
-                    localStorage.setItem('saelog_pins', JSON.stringify(PINS));
-                } else {
-                    setDoc(doc(db, 'artifacts', 'saelog-logistik', 'public', 'settings', 'pins'), PINS);
-                }
+                if (snap.exists()) { PINS = snap.data(); localStorage.setItem('saelog_pins', JSON.stringify(PINS)); } 
+                else { setDoc(doc(db, 'artifacts', 'saelog-logistik', 'public', 'settings', 'pins'), PINS); }
             });
         }
 
@@ -707,7 +737,6 @@
         function listenToPersonalPlan() {
             if (!db) return;
             if (dbUnsubscribePersonal) dbUnsubscribePersonal();
-            
             dbUnsubscribePersonal = onSnapshot(doc(db, 'artifacts', 'saelog-logistik', 'public', 'data', 'personalplan'), (snap) => {
                 if (snap.exists()) {
                     personalPlanData = snap.data();
@@ -740,7 +769,7 @@
             if (isFirebaseConnected && db) await setDoc(doc(db, 'artifacts', 'saelog-logistik', 'public', 'settings', 'pins'), newPins);
             else localStorage.setItem('saelog_pins', JSON.stringify(newPins));
             
-            alert("PINs erfolgreich für alle Mitarbeiter geändert!");
+            alert("PINs erfolgreich geändert!");
             closeSettingsModal();
         };
 
@@ -748,7 +777,6 @@
         function listenToDatabase() {
             if (!db) return;
             if (dbUnsubscribeOrders) dbUnsubscribeOrders();
-            
             dbUnsubscribeOrders = onSnapshot(collection(db, 'artifacts', 'saelog-logistik', 'public', 'data', 'orders'), (snapshot) => {
                 let fetched = [];
                 snapshot.forEach(doc => fetched.push({ id: doc.id, ...doc.data() }));
@@ -786,9 +814,7 @@
             if (pinBuffer === PINS[tempSelectedRole]) {
                 applyRole(tempSelectedRole, name);
                 closePinModal(); document.getElementById('modal-role-select').classList.add('hidden');
-            } else {
-                alert("Falsche PIN!"); pinBuffer = ""; document.getElementById('pin-display').value = "";
-            }
+            } else { alert("Falsche PIN!"); pinBuffer = ""; document.getElementById('pin-display').value = ""; }
         };
 
         function applyRole(role, userName) {
@@ -812,44 +838,36 @@
 
             ['btn-new-order', 'tab-logistiker', 'tab-fahrer', 'tab-montage', 'tab-archiv'].forEach(id => document.getElementById(id)?.classList.remove('hidden'));
 
-            if (role === 'fahrer') {
-                ['btn-new-order', 'tab-logistiker', 'tab-montage', 'tab-archiv', 'tab-admin'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
-                switchTab('fahrer');
-            } else if (role === 'logistiker') {
-                ['tab-fahrer', 'tab-montage', 'tab-admin'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
-                switchTab('logistiker');
-            } else if (role === 'montage') {
-                ['btn-new-order', 'tab-logistiker', 'tab-fahrer', 'tab-archiv', 'tab-admin'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
-                switchTab('montage');
-            } else {
-                switchTab('logistiker'); // Standardansicht Büro
-            }
+            if (role === 'fahrer') { ['btn-new-order', 'tab-logistiker', 'tab-montage', 'tab-archiv', 'tab-admin'].forEach(id => document.getElementById(id)?.classList.add('hidden')); switchTab('fahrer'); } 
+            else if (role === 'logistiker') { ['tab-fahrer', 'tab-montage', 'tab-admin'].forEach(id => document.getElementById(id)?.classList.add('hidden')); switchTab('logistiker'); } 
+            else if (role === 'montage') { ['btn-new-order', 'tab-logistiker', 'tab-fahrer', 'tab-archiv', 'tab-admin'].forEach(id => document.getElementById(id)?.classList.add('hidden')); switchTab('montage'); } 
+            else { switchTab('logistiker'); }
         }
 
         window.switchTab = function(tabName) {
+            if(activeTab === 'admin') window.updatePersonalDataFromDOM(); // Save DOM state to memory before leaving
+            
             activeTab = tabName;
             ['logistiker', 'fahrer', 'montage', 'archiv', 'admin'].forEach(t => {
                 const page = document.getElementById(`page-${t}`);
                 const tab = document.getElementById(`tab-${t}`);
                 if(page) page.classList.add('hidden');
-                if(tab) {
-                    tab.classList.remove('text-teal-400', 'font-semibold');
-                    tab.classList.add('text-slate-400', 'font-medium');
-                }
+                if(tab) { tab.classList.remove('text-teal-400', 'font-semibold'); tab.classList.add('text-slate-400', 'font-medium'); }
             });
             document.getElementById(`page-${tabName}`).classList.remove('hidden');
             const activeTabIcon = document.getElementById(`tab-${tabName}`);
-            if(activeTabIcon) {
-                activeTabIcon.classList.add('text-teal-400', 'font-semibold');
-            }
+            if(activeTabIcon) { activeTabIcon.classList.add('text-teal-400', 'font-semibold'); }
             renderAll();
         };
 
         function renderAll() {
             const badgeFahrer = document.getElementById('badge-fahrer-count');
             const fCount = orders.filter(o => o.deliveryType === 'delivery' && ['offen', 'in_richtung', 'gerichtet'].includes(o.status)).length;
-            if (fCount > 0) { badgeFahrer.innerText = fCount; badgeFahrer.classList.remove('hidden'); } 
-            else badgeFahrer.classList.add('hidden');
+            if (fCount > 0) { badgeFahrer.innerText = fCount; badgeFahrer.classList.remove('hidden'); } else badgeFahrer.classList.add('hidden');
+            
+            const badgeMontage = document.getElementById('badge-montage-count');
+            const mCount = orders.filter(o => o.deliveryType === 'montage' && ['offen', 'in_richtung'].includes(o.status)).length;
+            if (mCount > 0) { badgeMontage.innerText = mCount; badgeMontage.classList.remove('hidden'); } else badgeMontage.classList.add('hidden');
 
             if (activeTab === 'logistiker') { renderLogistikerLists(); optimizeLogistikPackliste(false); updateGroupActionBar(); }
             else if (activeTab === 'fahrer') renderFahrerTour();
@@ -859,9 +877,10 @@
         }
 
         // ==========================================
-        // PERSONALPLAN (BÜRO / ADMIN) NEU
+        // PERSONALPLAN (BÜRO / ADMIN)
         // ==========================================
         window.setPersonalPerson = function(name) {
+            window.updatePersonalDataFromDOM(); // Memory save before switching
             activePerson = name;
             document.getElementById('pers-name-display').innerText = name;
             if(name === 'Helga') {
@@ -874,55 +893,17 @@
             renderPersonalPlan();
         };
 
-        function renderPersonalPlan() {
-            const tbody = document.getElementById('table-personal-body');
-            tbody.innerHTML = '';
-            let rows = personalPlanData[activePerson] || [];
-            
-            // Wenn leer, erstelle zumindest eine leere Zeile als Start
-            if(rows.length === 0) { rows = [{ date: '', weekday: '', time: '', hours1: '', hours2: '' }]; }
-
-            rows.forEach((r, idx) => { appendPersonalRowHtml(tbody, r, idx); });
-            window.calcPersonalSums();
-        }
-
-        function appendPersonalRowHtml(tbody, r, idx) {
-            const tr = document.createElement('tr');
-            tr.className = 'plan-row hover:bg-slate-800/80 transition';
-            tr.innerHTML = `
-                <td class="p-2 border-b border-slate-700/50"><input type="date" class="plan-date w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 text-xs focus:border-teal-500 outline-none" value="${r.date || ''}"></td>
-                <td class="p-2 border-b border-slate-700/50"><input type="text" placeholder="Mo, Di..." class="plan-weekday w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 text-xs focus:border-teal-500 outline-none" value="${r.weekday || ''}"></td>
-                <td class="p-2 border-b border-slate-700/50"><input type="text" placeholder="08:00 - 16:00" class="plan-time w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 text-xs focus:border-teal-500 outline-none" value="${r.time || ''}"></td>
-                <td class="p-2 border-b border-slate-700/50"><input type="number" step="0.25" min="0" placeholder="0.0" class="plan-hours1 w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 text-sm font-bold text-center focus:border-teal-500 outline-none" value="${r.hours1 || ''}" oninput="calcPersonalSums()"></td>
-                <td class="p-2 border-b border-slate-700/50"><input type="number" step="0.25" min="0" placeholder="0.0" class="plan-hours2 w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 text-sm font-bold text-center focus:border-teal-500 outline-none" value="${r.hours2 || ''}" oninput="calcPersonalSums()"></td>
-                <td class="p-2 border-b border-slate-700/50 text-center"><button onclick="this.closest('tr').remove(); calcPersonalSums();" class="text-rose-500 hover:text-rose-400 hover:bg-rose-500/10 p-2 rounded-lg transition"><i class="fa-solid fa-trash-can"></i></button></td>
-            `;
-            tbody.appendChild(tr);
-        }
-
-        window.addPersonalRow = function() {
-            const tbody = document.getElementById('table-personal-body');
-            appendPersonalRowHtml(tbody, { date: '', weekday: '', time: '', hours1: '', hours2: '' }, -1);
+        window.changePersonalMonth = function(monthStr) {
+            window.updatePersonalDataFromDOM();
+            window.selectedMonth = monthStr;
+            renderPersonalPlan();
         };
 
-        window.calcPersonalSums = function() {
-            let h1 = 0, h2 = 0;
-            document.querySelectorAll('.plan-hours1').forEach(input => {
-                let val = parseFloat(input.value);
-                if(!isNaN(val)) h1 += val;
-            });
-            document.querySelectorAll('.plan-hours2').forEach(input => {
-                let val = parseFloat(input.value);
-                if(!isNaN(val)) h2 += val;
-            });
-            document.getElementById('plan-sum-h1').innerText = h1.toFixed(2);
-            document.getElementById('plan-sum-h2').innerText = h2.toFixed(2);
-        };
-
-        window.savePersonalPlan = async function() {
-            let rows = [];
+        window.updatePersonalDataFromDOM = function() {
+            if(!personalPlanData[activePerson]) personalPlanData[activePerson] = [];
+            let monthRows = [];
             document.querySelectorAll('.plan-row').forEach(tr => {
-                rows.push({
+                monthRows.push({
                     date: tr.querySelector('.plan-date').value,
                     weekday: tr.querySelector('.plan-weekday').value,
                     time: tr.querySelector('.plan-time').value,
@@ -930,7 +911,136 @@
                     hours2: tr.querySelector('.plan-hours2').value
                 });
             });
-            personalPlanData[activePerson] = rows;
+            // Update main array by replacing the current month's items
+            personalPlanData[activePerson] = personalPlanData[activePerson].filter(r => !(r.date && r.date.startsWith(window.selectedMonth)));
+            personalPlanData[activePerson].push(...monthRows);
+            personalPlanData[activePerson].sort((a,b) => a.date.localeCompare(b.date));
+        };
+
+        window.renderPersonalPlan = function() {
+            let allRows = personalPlanData[activePerson] || [];
+            
+            // Build Month List
+            let months = new Set();
+            allRows.forEach(r => { if(r.date) months.add(r.date.substring(0,7)); });
+            let todayMonth = new Date().toISOString().substring(0,7);
+            months.add(todayMonth);
+            
+            let monthArr = Array.from(months).sort().reverse();
+            if(!window.selectedMonth || !months.has(window.selectedMonth)) window.selectedMonth = monthArr[0];
+
+            let selectHtml = monthArr.map(m => `<option value="${m}" ${m === window.selectedMonth ? 'selected' : ''}>${m}</option>`).join('');
+            document.getElementById('month-select').innerHTML = selectHtml;
+
+            let tbody = document.getElementById('table-personal-body');
+            tbody.innerHTML = '';
+            
+            // Filtere nur für den ausgewählten Monat
+            let monthRows = allRows.filter(r => r.date && r.date.startsWith(window.selectedMonth));
+            
+            if(monthRows.length === 0) { 
+                appendPersonalRowHtml(tbody, { date: window.selectedMonth + '-01', weekday: '', time: '', hours1: '', hours2: '' });
+            } else {
+                monthRows.forEach(r => appendPersonalRowHtml(tbody, r));
+            }
+            window.calcPersonalSums();
+        };
+
+        window.checkRowColor = function(input) {
+            const val = input.value.toLowerCase();
+            // Reset colors
+            input.classList.remove('bg-emerald-500/20', 'text-emerald-400', 'bg-amber-500/20', 'text-amber-400', 'bg-rose-500/20', 'text-rose-400', 'border-emerald-500/50', 'border-amber-500/50', 'border-rose-500/50');
+            
+            if (val.includes('frei')) { input.classList.add('bg-emerald-500/20', 'text-emerald-400', 'border-emerald-500/50'); }
+            else if (val.includes('urlaub')) { input.classList.add('bg-amber-500/20', 'text-amber-400', 'border-amber-500/50'); }
+            else if (val.includes('sonntag')) { input.classList.add('bg-rose-500/20', 'text-rose-400', 'border-rose-500/50'); }
+        };
+
+        // DIE NEUE RESPONSIVE FUNKTION FÜR DEN PERSONALPLAN
+        function appendPersonalRowHtml(tbody, r) {
+            const tr = document.createElement('tr');
+            // Tailwind Klassen für responsives Design (Karte auf Handy, Tabellenzeile am PC)
+            tr.className = 'plan-row hover:bg-slate-800/80 transition flex flex-col md:table-row bg-slate-800/40 md:bg-transparent border border-slate-700/80 md:border-none rounded-2xl md:rounded-none mb-4 md:mb-0 p-3 md:p-0 relative shadow-lg md:shadow-none';
+            
+            tr.innerHTML = `
+                <!-- Delete Button (Handy: Oben rechts schwebend, PC: Rechte Spalte) -->
+                <td class="absolute top-3 right-3 md:static md:table-cell p-0 md:p-2 md:border-b border-slate-700/50 text-center z-10">
+                    <button onclick="this.closest('tr').remove(); updatePersonalDataFromDOM(); calcPersonalSums();" class="text-rose-500 hover:text-rose-400 bg-slate-900 md:bg-transparent hover:bg-rose-500/10 p-2.5 rounded-xl transition border border-slate-700 md:border-none shadow-sm md:shadow-none"><i class="fa-solid fa-trash-can"></i></button>
+                </td>
+
+                <td class="flex md:table-cell flex-col p-1.5 md:p-2 md:border-b border-slate-700/50 w-full pr-14 md:pr-2">
+                    <span class="md:hidden text-[10px] font-bold text-slate-400 uppercase mb-1 pl-1">Datum</span>
+                    <input type="date" class="plan-date w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 md:p-2 text-slate-200 text-xs md:text-sm focus:border-teal-500 outline-none" value="${r.date || ''}" onchange="updatePersonalDataFromDOM()">
+                </td>
+                
+                <td class="flex md:table-cell flex-col p-1.5 md:p-2 md:border-b border-slate-700/50 w-full">
+                    <span class="md:hidden text-[10px] font-bold text-slate-400 uppercase mb-1 pl-1">Wochentag</span>
+                    <input type="text" placeholder="Mo, Di..." class="plan-cell-input plan-weekday w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 md:p-2 text-slate-200 text-xs md:text-sm focus:border-teal-500 outline-none font-bold" value="${r.weekday || ''}" onkeyup="checkRowColor(this); updatePersonalDataFromDOM()">
+                </td>
+                
+                <td class="flex md:table-cell flex-col p-1.5 md:p-2 md:border-b border-slate-700/50 w-full pb-3 md:pb-2">
+                    <span class="md:hidden text-[10px] font-bold text-slate-400 uppercase mb-1 pl-1">Arbeitszeit</span>
+                    <input type="text" placeholder="08:00 - 16:00" class="plan-cell-input plan-time w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 md:p-2 text-slate-200 text-xs md:text-sm focus:border-teal-500 outline-none" value="${r.time || ''}" onkeyup="checkRowColor(this); updatePersonalDataFromDOM()">
+                </td>
+                
+                <td class="flex md:table-cell justify-between items-center p-2.5 md:p-2 md:border-b border-slate-700/50 mt-1 md:mt-0 bg-slate-900/60 md:bg-transparent rounded-t-xl md:rounded-none">
+                    <span class="md:hidden text-[10px] font-bold text-teal-400 uppercase pl-1">Durchschn. Stunden</span>
+                    <input type="number" step="0.25" min="0" placeholder="0.0" class="plan-hours1 w-24 md:w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-teal-300 text-sm font-bold text-center focus:border-teal-500 outline-none shadow-inner" value="${r.hours1 || ''}" oninput="calcPersonalSums(); updatePersonalDataFromDOM()">
+                </td>
+                
+                <td class="flex md:table-cell justify-between items-center p-2.5 md:p-2 md:border-b border-slate-700/50 bg-slate-900/60 md:bg-transparent rounded-b-xl md:rounded-none border-t border-slate-700 md:border-t-0">
+                    <span class="md:hidden text-[10px] font-bold text-teal-400 uppercase pl-1">Stunden (Echt)</span>
+                    <input type="number" step="0.25" min="0" placeholder="0.0" class="plan-hours2 w-24 md:w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-teal-300 text-sm font-bold text-center focus:border-teal-500 outline-none shadow-inner" value="${r.hours2 || ''}" oninput="calcPersonalSums(); updatePersonalDataFromDOM()">
+                </td>
+            `;
+            tbody.appendChild(tr);
+            // Initiale Farbanwendung
+            window.checkRowColor(tr.querySelector('.plan-weekday'));
+            window.checkRowColor(tr.querySelector('.plan-time'));
+        }
+
+        window.addPersonalRow = function() {
+            window.updatePersonalDataFromDOM(); // Sicherstellen, dass alles in DB ist
+            let monthRows = personalPlanData[activePerson].filter(r => r.date && r.date.startsWith(window.selectedMonth));
+            
+            let newDateStr = '';
+            if (monthRows.length > 0) {
+                let lastDateStr = monthRows[monthRows.length - 1].date;
+                if(lastDateStr) {
+                    let d = new Date(lastDateStr);
+                    d.setDate(d.getDate() + 1); // + 1 Tag
+                    newDateStr = d.toISOString().split('T')[0];
+                }
+            } else {
+                newDateStr = window.selectedMonth + '-01';
+            }
+
+            const tbody = document.getElementById('table-personal-body');
+            appendPersonalRowHtml(tbody, { date: newDateStr, weekday: '', time: '', hours1: '', hours2: '' });
+            window.updatePersonalDataFromDOM(); // Direkt übernehmen
+        };
+
+        window.calcPersonalSums = function() {
+            // Aktueller Monat
+            let h1 = 0, h2 = 0;
+            document.querySelectorAll('.plan-hours1').forEach(input => { let val = parseFloat(input.value); if(!isNaN(val)) h1 += val; });
+            document.querySelectorAll('.plan-hours2').forEach(input => { let val = parseFloat(input.value); if(!isNaN(val)) h2 += val; });
+            document.getElementById('plan-sum-h1').innerText = h1.toFixed(2);
+            document.getElementById('plan-sum-h2').innerText = h2.toFixed(2);
+
+            // Gesamte Zeit über alle Monate
+            let totalAllTime = 0;
+            if(personalPlanData[activePerson]) {
+                personalPlanData[activePerson].forEach(r => {
+                    let val = parseFloat(r.hours2); // Stunden Spalte
+                    if(!isNaN(val)) totalAllTime += val;
+                });
+            }
+            document.getElementById('overall-sum').innerText = totalAllTime.toFixed(2);
+        };
+
+        window.savePersonalPlan = async function() {
+            window.updatePersonalDataFromDOM(); 
             
             if (isFirebaseConnected && db) {
                 await setDoc(doc(db, 'artifacts', 'saelog-logistik', 'public', 'data', 'personalplan'), personalPlanData);
@@ -944,49 +1054,32 @@
         // ==========================================
         // GRUPPIERUNG LOGIK (PALETTE)
         // ==========================================
-        
         window.toggleGroupSelect = function(id, isChecked) {
             if(isChecked) window.selectedForGroup.add(id);
             else window.selectedForGroup.delete(id);
             updateGroupActionBar();
         };
 
-        window.clearGroupSelection = function() {
-            window.selectedForGroup.clear();
-            renderLogistikerLists(); 
-            updateGroupActionBar();
-        };
+        window.clearGroupSelection = function() { window.selectedForGroup.clear(); renderLogistikerLists(); updateGroupActionBar(); };
 
         function updateGroupActionBar() {
             const bar = document.getElementById('group-action-bar');
             const countSpan = document.getElementById('group-sel-count');
-            if(window.selectedForGroup.size > 0) {
-                countSpan.innerText = window.selectedForGroup.size;
-                bar.classList.remove('hidden');
-            } else {
-                bar.classList.add('hidden');
-            }
+            if(window.selectedForGroup.size > 0) { countSpan.innerText = window.selectedForGroup.size; bar.classList.remove('hidden'); } 
+            else { bar.classList.add('hidden'); }
         }
 
         window.groupSelectedOrders = async function() {
-            if(window.selectedForGroup.size < 2) return alert("Bitte mindestens 2 Aufträge über die Checkboxen markieren, um sie auf eine Palette zu bündeln.");
+            if(window.selectedForGroup.size < 2) return alert("Bitte mindestens 2 Aufträge markieren.");
             const groupId = 'pal_' + Date.now();
-            
             let promises = [];
-            window.selectedForGroup.forEach(id => {
-                promises.push(updateOrder(id, { groupId: groupId }));
-            });
+            window.selectedForGroup.forEach(id => { promises.push(updateOrder(id, { groupId: groupId })); });
             await Promise.all(promises);
-            
             window.selectedForGroup.clear();
             updateGroupActionBar();
         };
 
-        window.ungroupOrder = async function(id) {
-            if(confirm("Diesen Auftrag von der Palette lösen?")) {
-                await updateOrder(id, { groupId: null });
-            }
-        };
+        window.ungroupOrder = async function(id) { if(confirm("Auftrag von Palette lösen?")) { await updateOrder(id, { groupId: null }); } };
 
         function createOrderCardHtml(order, isInProgress, isBereit = false) {
             let borderColor = isBereit ? 'border-emerald-500/20' : (isInProgress ? 'border-amber-500/40' : (order.isUrgent ? 'border-purple-500/60' : 'border-slate-700/60'));
@@ -998,7 +1091,6 @@
                     ? `<button onclick="updateOrderStatus('${order.id}', 'in_richtung')" class="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs py-2.5 px-3 rounded-lg font-bold w-full">Richten starten</button>`
                     : `<button onclick="updateOrderStatus('${order.id}', '${order.deliveryType === 'pickup' ? 'abholbereit_gerichtet' : 'gerichtet'}')" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-slate-900 text-xs py-2.5 px-3 rounded-lg font-bold w-full">Richten fertig</button>`;
             } else {
-                // NEU: Abhol-Button für Abholer
                 if(order.deliveryType === 'pickup') {
                     actionBtn = `<button onclick="updateOrderStatus('${order.id}', 'abgeholt')" class="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs py-2.5 px-3 rounded-lg font-bold w-full shadow-lg"><i class="fa-solid fa-box-open mr-1"></i> Kunde hat abgeholt</button>`;
                 }
@@ -1020,8 +1112,7 @@
 
             return `
                 <div class="${bgClass} border ${borderColor} rounded-2xl p-5 transition flex flex-col space-y-4 relative pr-10">
-                    ${checkboxHtml}
-                    ${ungroupBtn}
+                    ${checkboxHtml} ${ungroupBtn}
                     <div>
                         <div class="flex flex-col items-start gap-1">
                             <h4 class="font-bold text-white leading-tight w-full pr-4">${order.customerName}</h4>
@@ -1040,7 +1131,6 @@
         function renderLogistikerLists() {
             const listOffen = document.getElementById('list-offen');
             const listBereit = document.getElementById('list-bereit');
-            
             const offenItems = orders.filter(o => o.status === 'offen' || o.status === 'in_richtung').sort((a, b) => new Date(a.deliveryDate || '2099-12-31') - new Date(b.deliveryDate || '2099-12-31'));
             const bereitItems = orders.filter(o => o.status === 'gerichtet' || o.status === 'abholbereit_gerichtet');
             
@@ -1049,19 +1139,10 @@
 
             function renderSection(items, containerElement, isBereitSection) {
                 containerElement.innerHTML = '';
-                if (items.length === 0) {
-                    containerElement.innerHTML = `<div class="col-span-full p-8 text-center bg-slate-800/20 border border-dashed border-slate-700/50 rounded-2xl text-slate-500">Leer.</div>`;
-                    return;
-                }
+                if (items.length === 0) { containerElement.innerHTML = `<div class="col-span-full p-8 text-center bg-slate-800/20 border border-dashed border-slate-700/50 rounded-2xl text-slate-500">Leer.</div>`; return; }
 
-                let grouped = {};
-                let ungrouped = [];
-                items.forEach(o => {
-                    if(o.groupId) {
-                        if(!grouped[o.groupId]) grouped[o.groupId] = [];
-                        grouped[o.groupId].push(o);
-                    } else { ungrouped.push(o); }
-                });
+                let grouped = {}; let ungrouped = [];
+                items.forEach(o => { if(o.groupId) { if(!grouped[o.groupId]) grouped[o.groupId] = []; grouped[o.groupId].push(o); } else { ungrouped.push(o); } });
 
                 let groupCounter = 1;
                 for (const [gId, gItems] of Object.entries(grouped)) {
@@ -1071,16 +1152,10 @@
                             <div class="absolute -top-3 left-4 bg-slate-900 px-3 border border-teal-500/40 rounded-full flex items-center shadow-lg">
                                 <span class="text-[10px] font-bold text-teal-400 uppercase tracking-widest"><i class="fa-solid fa-pallet mr-1"></i> Palette ${groupCounter++}</span>
                             </div>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mt-2">
-                                ${cardsHtml}
-                            </div>
-                        </div>
-                    `;
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mt-2">${cardsHtml}</div>
+                        </div>`;
                 }
-
-                ungrouped.forEach(o => {
-                    containerElement.innerHTML += createOrderCardHtml(o, o.status === 'in_richtung', isBereitSection);
-                });
+                ungrouped.forEach(o => { containerElement.innerHTML += createOrderCardHtml(o, o.status === 'in_richtung', isBereitSection); });
             }
 
             renderSection(offenItems, listOffen, false);
@@ -1097,14 +1172,12 @@
                 alert("Ladeliste wurde anhand der Routen-Daten berechnet!");
                 return; 
             }
-
             lifoList.sort((a, b) => (a.lifoIndex ?? 999) - (b.lifoIndex ?? 999));
             
             const container = document.getElementById('logistik-lifo-list');
             if (container) {
-                if(lifoList.length === 0) {
-                    container.innerHTML = `<li class="text-center text-slate-500 text-xs py-4">Keine Lieferungen für diesen Tag gefunden.</li>`;
-                } else {
+                if(lifoList.length === 0) { container.innerHTML = `<li class="text-center text-slate-500 text-xs py-4">Keine Lieferungen für diesen Tag gefunden.</li>`; } 
+                else {
                     container.innerHTML = lifoList.map((o, index) => {
                         let statusIcon = o.status === 'gerichtet' ? '<i class="fa-solid fa-check-circle text-emerald-500 ml-1" title="Gerichtet"></i>' : '';
                         let groupIcon = o.groupId ? '<i class="fa-solid fa-pallet text-teal-500 ml-1" title="Auf Palette gruppiert"></i>' : '';
@@ -1122,8 +1195,7 @@
                                     <button onclick="moveLifo('${o.id}', 1)" class="bg-slate-700 hover:bg-teal-500 hover:text-slate-900 text-slate-300 p-1.5 rounded transition ${index === lifoList.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}" ${index === lifoList.length - 1 ? 'disabled' : ''}><i class="fa-solid fa-chevron-down text-[10px]"></i></button>
                                 </div>
                             </div>
-                        </li>
-                    `}).join('');
+                        </li>`}).join('');
                 }
                 document.getElementById('logistik-lifo-container')?.classList.remove('hidden');
                 document.getElementById('logistik-lifo-container')?.classList.add('flex');
@@ -1137,7 +1209,6 @@
 
             let idx = lifoList.findIndex(o => o.id === id);
             if (idx < 0) return;
-            
             let swapIdx = idx + direction;
             if (swapIdx < 0 || swapIdx >= lifoList.length) return;
 
@@ -1145,15 +1216,9 @@
             lifoList[idx] = lifoList[swapIdx];
             lifoList[swapIdx] = temp;
 
-            lifoList.forEach((o, i) => {
-                if (o.lifoIndex !== i) {
-                    o.lifoIndex = i; 
-                    updateOrder(o.id, { lifoIndex: i }); 
-                }
-            });
+            lifoList.forEach((o, i) => { if (o.lifoIndex !== i) { o.lifoIndex = i; updateOrder(o.id, { lifoIndex: i }); } });
             optimizeLogistikPackliste(false);
         };
-
 
         // --- FAHRER & ROUTEN & MAPS ---
         window.renderFahrerTour = function() {
@@ -1161,27 +1226,15 @@
             const selectedDate = document.getElementById('fahrer-date-filter').value;
             listTour.innerHTML = '';
             
-            let tourItems = orders.filter(o => 
-                o.deliveryType === 'delivery' && 
-                o.deliveryDate === selectedDate &&
-                ['offen', 'in_richtung', 'gerichtet'].includes(o.status)
-            );
-            
+            let tourItems = orders.filter(o => o.deliveryType === 'delivery' && o.deliveryDate === selectedDate && ['offen', 'in_richtung', 'gerichtet'].includes(o.status));
             tourItems.sort((a, b) => (a.routeIndex || 999) - (b.routeIndex || 999));
 
-            if (tourItems.length === 0) {
-                listTour.innerHTML = `<div class="p-12 text-center text-slate-500">Keine Zustellungen für den ${selectedDate.split('-').reverse().join('.')} geplant.</div>`;
-                return;
-            }
+            if (tourItems.length === 0) { listTour.innerHTML = `<div class="p-12 text-center text-slate-500">Keine Zustellungen für den ${selectedDate.split('-').reverse().join('.')} geplant.</div>`; return; }
 
             tourItems.forEach((order, index) => {
                 const stopIndex = order.routeIndex || (index + 1);
+                let statusWarn = order.status !== 'gerichtet' ? `<span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] px-2 py-0.5 rounded font-bold uppercase ml-2 animate-pulse inline-block mb-1">Nicht gerichtet!</span>` : '';
                 
-                let statusWarn = '';
-                if (order.status !== 'gerichtet') {
-                    statusWarn = `<span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] px-2 py-0.5 rounded font-bold uppercase ml-2 animate-pulse inline-block mb-1">Nicht gerichtet!</span>`;
-                }
-
                 listTour.innerHTML += `
                     <div class="bg-slate-800 border border-slate-700/80 rounded-2xl p-5 shadow-lg relative mt-2">
                         <div class="absolute top-0 left-0 bg-teal-500 text-slate-900 font-bold px-3 py-1 rounded-br-xl text-xs">Stopp ${stopIndex}</div>
@@ -1200,12 +1253,9 @@
         };
 
         window.openCompleteDeliveryModal = function(id) {
-            window.completingOrderId = id;
-            window.tempDeliveryPhoto = null;
-            document.getElementById('delivery-photo-input').value = "";
-            document.getElementById('photo-preview-container').classList.add('hidden');
-            document.getElementById('photo-upload-label').classList.remove('hidden');
-            document.getElementById('modal-complete-delivery').classList.remove('hidden');
+            window.completingOrderId = id; window.tempDeliveryPhoto = null;
+            document.getElementById('delivery-photo-input').value = ""; document.getElementById('photo-preview-container').classList.add('hidden');
+            document.getElementById('photo-upload-label').classList.remove('hidden'); document.getElementById('modal-complete-delivery').classList.remove('hidden');
         };
         window.closeCompleteDeliveryModal = function() { document.getElementById('modal-complete-delivery').classList.add('hidden'); };
         
@@ -1221,30 +1271,21 @@
                     let width = img.width, height = img.height;
                     if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } } 
                     else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
-                    canvas.width = width; canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
+                    canvas.width = width; canvas.height = height; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
                     window.tempDeliveryPhoto = canvas.toDataURL('image/jpeg', 0.6); 
                     document.getElementById('delivery-photo-preview').src = window.tempDeliveryPhoto;
-                    document.getElementById('photo-preview-container').classList.remove('hidden');
-                    document.getElementById('photo-upload-label').classList.add('hidden');
+                    document.getElementById('photo-preview-container').classList.remove('hidden'); document.getElementById('photo-upload-label').classList.add('hidden');
                 };
                 img.src = e.target.result;
             };
             reader.readAsDataURL(file);
         };
-        window.removeDeliveryPhoto = function() {
-            window.tempDeliveryPhoto = null;
-            document.getElementById('delivery-photo-input').value = "";
-            document.getElementById('photo-preview-container').classList.add('hidden');
-            document.getElementById('photo-upload-label').classList.remove('hidden');
-        };
+        window.removeDeliveryPhoto = function() { window.tempDeliveryPhoto = null; document.getElementById('delivery-photo-input').value = ""; document.getElementById('photo-preview-container').classList.add('hidden'); document.getElementById('photo-upload-label').classList.remove('hidden'); };
         window.confirmDeliveryComplete = function() {
             if (!window.completingOrderId) return;
             let payload = { status: 'geliefert', updatedBy: currentUserName, updatedAt: new Date().toLocaleString('de-DE') };
             if (window.tempDeliveryPhoto) payload.deliveryPhotoBase64 = window.tempDeliveryPhoto;
-            updateOrder(window.completingOrderId, payload);
-            closeCompleteDeliveryModal();
+            updateOrder(window.completingOrderId, payload); closeCompleteDeliveryModal();
         };
 
         window.openFullRouteInMaps = function() {
@@ -1272,47 +1313,34 @@
             const btn = document.getElementById('btn-optimize');
             const originalHTML = btn.innerHTML;
             btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-sm"></i><span>Berechne...</span>`;
-            btn.classList.add('opacity-80', 'cursor-not-allowed');
-            btn.disabled = true;
+            btn.classList.add('opacity-80', 'cursor-not-allowed'); btn.disabled = true;
 
             const selectedDate = document.getElementById('fahrer-date-filter').value;
             const startAddress = "Auf dem Wilcher 7, 66916 Breitenbach, Deutschland";
             let tourItems = orders.filter(o => o.deliveryType === 'delivery' && o.deliveryDate === selectedDate && ['offen', 'in_richtung', 'gerichtet'].includes(o.status));
             
-            if (tourItems.length === 0) {
-                alert("Keine Lieferungen für diesen Tag gefunden.");
-                btn.innerHTML = originalHTML; btn.classList.remove('opacity-80', 'cursor-not-allowed'); btn.disabled = false;
-                return;
-            }
+            if (tourItems.length === 0) { alert("Keine Lieferungen für diesen Tag gefunden."); btn.innerHTML = originalHTML; btn.classList.remove('opacity-80', 'cursor-not-allowed'); btn.disabled = false; return; }
 
             async function getCoords(addressStr) {
                 try {
                     const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressStr)}&limit=1`);
                     const data = await res.json();
                     if (data && data.length > 0) return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
-                } catch(e) {}
-                return null;
+                } catch(e) {} return null;
             }
 
             let startCoords = await getCoords(startAddress);
-            if (!startCoords) {
-                alert("Startadresse konnte nicht auf Karte gefunden werden.");
-                btn.innerHTML = originalHTML; btn.classList.remove('opacity-80', 'cursor-not-allowed'); btn.disabled = false;
-                return;
-            }
+            if (!startCoords) { alert("Startadresse konnte nicht auf Karte gefunden werden."); btn.innerHTML = originalHTML; btn.classList.remove('opacity-80', 'cursor-not-allowed'); btn.disabled = false; return; }
 
             let coordsList = [];
             for (let order of tourItems) {
                 let coords = await getCoords(order.address);
-                if (coords) coordsList.push({ ...order, coords });
-                else coordsList.push({ ...order, coords: null }); 
+                if (coords) coordsList.push({ ...order, coords }); else coordsList.push({ ...order, coords: null }); 
                 await new Promise(resolve => setTimeout(resolve, 600)); 
             }
 
             function getDistance(lat1, lon1, lat2, lon2) {
-                const R = 6371; 
-                const dLat = (lat2 - lat1) * Math.PI / 180;
-                const dLon = (lon2 - lon1) * Math.PI / 180;
+                const R = 6371; const dLat = (lat2 - lat1) * Math.PI / 180; const dLon = (lon2 - lon1) * Math.PI / 180;
                 const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * Math.sin(dLon/2) * Math.sin(dLon/2);
                 return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
             }
@@ -1320,9 +1348,7 @@
             let unvisited = coordsList.filter(o => o.coords !== null);
             let unroutable = coordsList.filter(o => o.coords === null); 
             
-            let currentLoc = startCoords;
-            let currentRouteIndex = 1;
-            let pathForMap = [startCoords];
+            let currentLoc = startCoords; let currentRouteIndex = 1; let pathForMap = [startCoords];
 
             while (unvisited.length > 0) {
                 let closestIdx = 0, minDistance = Infinity;
@@ -1332,15 +1358,14 @@
                 }
                 let nextStop = unvisited.splice(closestIdx, 1)[0];
                 updateOrder(nextStop.id, { routeIndex: currentRouteIndex++ });
-                pathForMap.push(nextStop.coords);
-                currentLoc = nextStop.coords; 
+                pathForMap.push(nextStop.coords); currentLoc = nextStop.coords; 
             }
 
             for (let fail of unroutable) updateOrder(fail.id, { routeIndex: currentRouteIndex++ });
             
             btn.innerHTML = originalHTML; btn.classList.remove('opacity-80', 'cursor-not-allowed'); btn.disabled = false;
             drawMapRoute(pathForMap);
-            if (unroutable.length > 0) alert(`Route optimiert!\nHinweis: ${unroutable.length} Adresse(n) wurden nicht auf der Karte gefunden und ans Ende gestellt.`);
+            if (unroutable.length > 0) alert(`Route optimiert!\nHinweis: ${unroutable.length} Adresse(n) wurden nicht auf der Karte gefunden.`);
         };
 
         window.drawMapRoute = function(pathPoints) {
@@ -1371,12 +1396,38 @@
         function renderMontageAppointments() {
             const weekPicker = document.getElementById('montage-week-picker');
             const listMontage = document.getElementById('list-montage-appointments');
+            const pendingContainer = document.getElementById('pending-montage-container');
             
+            // 1. Zeige UNGEREICHTETE Montagen (unabhängig vom Datum)
+            let pendingMontagen = orders.filter(o => o.deliveryType === 'montage' && ['offen', 'in_richtung'].includes(o.status));
+            if(pendingMontagen.length > 0) {
+                pendingContainer.innerHTML = `
+                    <div class="p-4 bg-amber-500/10 border border-amber-500/40 rounded-2xl shadow-lg mt-2">
+                        <h3 class="text-sm font-bold text-amber-500 uppercase tracking-wider mb-3 flex items-center"><i class="fa-solid fa-triangle-exclamation mr-2 text-lg"></i> Noch nicht gerichtet!</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            ${pendingMontagen.map(o => `
+                                <div class="bg-slate-800/80 border border-amber-500/30 p-3 rounded-xl flex flex-col justify-between">
+                                    <div>
+                                        <p class="font-bold text-slate-100 text-sm">${o.customerName}</p>
+                                        <p class="text-[10px] text-slate-400 mt-0.5">Termin: ${o.deliveryDate ? o.deliveryDate.split('-').reverse().join('.') : 'Ohne Datum'}</p>
+                                    </div>
+                                    <div class="mt-3 flex justify-between items-end">
+                                        <span class="bg-amber-500/20 text-amber-400 text-[10px] px-2 py-1 rounded font-bold uppercase tracking-wider">${o.status.replace('_', ' ')}</span>
+                                        <button onclick="showOrderDetails('${o.id}')" class="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-info-circle mr-1"></i> Info</button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>`;
+            } else {
+                pendingContainer.innerHTML = '';
+            }
+
+            // 2. Regulärer Terminkalender
             weekPicker.innerHTML = '';
             let today = new Date();
             for(let i=0; i<14; i++) {
-                let d = new Date(today);
-                d.setDate(today.getDate() + i);
+                let d = new Date(today); d.setDate(today.getDate() + i);
                 let dateStr = d.toISOString().split('T')[0];
                 let isSelected = (dateStr === selectedMontageDate);
                 let btnClass = isSelected ? 'bg-teal-500 text-slate-900 shadow-lg shadow-teal-500/20 font-bold' : 'bg-slate-700 text-slate-300 hover:bg-slate-600';
@@ -1449,33 +1500,58 @@
         
         // --- ORDER MANAGEMENT & MULTI PDF ---
 
-        window.previewPdf = function(index) {
-            const pdf = window.tempPdfs[index];
-            if (!pdf) return;
-            const arr = pdf.base64.split(',');
-            const bstr = atob(arr[1] || arr[0]);
-            let n = bstr.length;
-            const u8arr = new Uint8Array(n);
-            while(n--) u8arr[n] = bstr.charCodeAt(n);
-            const blob = new Blob([u8arr], {type: 'application/pdf'});
-            document.getElementById('pdf-preview-iframe').src = URL.createObjectURL(blob);
-            document.getElementById('pdf-preview-container').classList.remove('hidden');
+        window.previewPdf = async function(index) {
+            const pdfData = window.tempPdfs[index];
+            if (!pdfData) return;
+            
+            const container = document.getElementById('pdf-preview-container');
+            const content = document.getElementById('pdf-preview-content');
+            
+            // Container einblenden & Lade-Animation zeigen
+            container.classList.remove('hidden');
+            content.innerHTML = '<div class="flex items-center justify-center h-full w-full"><i class="fa-solid fa-spinner fa-spin text-3xl text-teal-500"></i></div>';
+
+            try {
+                // PDF Base64 dekodieren
+                const arr = pdfData.base64.split(','); 
+                const bstr = atob(arr[1] || arr[0]); 
+                const u8arr = new Uint8Array(bstr.length); 
+                for(let i=0; i<bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
+                
+                // PDF mit pdf.js laden und ERSTE Seite holen
+                const loadingTask = pdfjsLib.getDocument({data: u8arr});
+                const pdfDoc = await loadingTask.promise;
+                const page = await pdfDoc.getPage(1);
+                
+                // HTML Canvas vorbereiten, auf dem die PDF gezeichnet wird
+                const viewport = page.getViewport({scale: 1.5});
+                const canvas = document.createElement('canvas');
+                canvas.className = 'max-w-full h-auto shadow-md'; 
+                const ctx = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                
+                // PDF Seite auf Canvas rendern
+                await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+                
+                // Lade-Animation entfernen und fertig gezeichnetes Bild einfügen
+                content.innerHTML = '';
+                content.appendChild(canvas);
+            } catch (e) {
+                console.error("PDF Preview Fehler:", e);
+                content.innerHTML = '<div class="flex items-center justify-center h-full w-full text-rose-500 text-sm font-bold"><i class="fa-solid fa-triangle-exclamation mr-2"></i> Vorschau konnte nicht geladen werden.</div>';
+            }
         };
 
         window.removePdf = function(index) {
-            window.tempPdfs.splice(index, 1);
-            renderPdfList();
-            document.getElementById('pdf-preview-container').classList.add('hidden');
-            document.getElementById('pdf-preview-iframe').src = "";
+            window.tempPdfs.splice(index, 1); renderPdfList();
+            document.getElementById('pdf-preview-container').classList.add('hidden'); 
+            document.getElementById('pdf-preview-content').innerHTML = ""; // Neues Feld leeren
         };
 
         function renderPdfList() {
             const container = document.getElementById('pdf-list-container');
-            if(window.tempPdfs.length === 0) {
-                container.innerHTML = '';
-                container.classList.add('hidden');
-                return;
-            }
+            if(window.tempPdfs.length === 0) { container.innerHTML = ''; container.classList.add('hidden'); return; }
             container.classList.remove('hidden');
             container.innerHTML = window.tempPdfs.map((p, i) => `
                 <div class="flex items-center justify-between bg-slate-900 p-3 rounded-xl border border-slate-700 shadow-sm">
@@ -1484,20 +1560,18 @@
                         <button type="button" onclick="previewPdf(${i})" class="text-teal-400 hover:bg-teal-500/10 px-3 py-1.5 text-xs font-bold border border-teal-500/30 rounded-lg transition"><i class="fa-solid fa-eye mr-1"></i> Vorschau</button>
                         <button type="button" onclick="removePdf(${i})" class="text-rose-500 hover:text-rose-400 p-2 bg-rose-500/10 hover:bg-rose-500/20 rounded-lg transition"><i class="fa-solid fa-trash-can"></i></button>
                     </div>
-                </div>
-            `).join('');
+                </div>`).join('');
         }
 
         window.openNewOrderModal = function() {
-            window.editingOrderId = null; 
-            window.tempPdfs = []; 
+            window.editingOrderId = null; window.tempPdfs = []; 
             document.getElementById('modal-order-icon').className = "fa-solid fa-file-circle-plus text-teal-400";
             document.getElementById('modal-order-title').innerText = "Lieferschein erfassen";
             document.getElementById('form-status-container').classList.add('hidden'); 
             
-            document.getElementById('pdf-file-input').value = "";
+            document.getElementById('pdf-file-input').value = ""; 
             document.getElementById('pdf-preview-container').classList.add('hidden');
-            document.getElementById('pdf-preview-iframe').src = "";
+            document.getElementById('pdf-preview-content').innerHTML = ""; // NEU HIER
             renderPdfList();
 
             ['customerName', 'street', 'zip', 'city', 'phone', 'time', 'notes'].forEach(id => document.getElementById(`form-${id}`).value = '');
@@ -1514,8 +1588,8 @@
             
             window.tempPdfs = order.pdfs ? [...order.pdfs] : (order.pdfBase64 ? [{name: "Lieferschein.pdf", base64: order.pdfBase64}] : []);
             
-            document.getElementById('pdf-preview-container').classList.add('hidden');
-            document.getElementById('pdf-preview-iframe').src = "";
+            document.getElementById('pdf-preview-container').classList.add('hidden'); 
+            document.getElementById('pdf-preview-content').innerHTML = ""; // NEU HIER
             renderPdfList();
 
             document.getElementById('modal-order-icon').className = "fa-solid fa-pen-to-square text-blue-400";
@@ -1535,14 +1609,13 @@
             document.getElementById('form-paymentStatus').value = order.paymentMethod || 'Offen';
             document.getElementById('form-isUrgent').checked = !!order.isUrgent;
             
-            closeDetailsModal();
-            document.getElementById('modal-order').classList.remove('hidden');
+            closeDetailsModal(); document.getElementById('modal-order').classList.remove('hidden');
         };
         
         window.closeNewOrderModal = function() { 
             document.getElementById('modal-order').classList.add('hidden');
-            document.getElementById('pdf-preview-container').classList.add('hidden');
-            document.getElementById('pdf-preview-iframe').src = "";
+            document.getElementById('pdf-preview-container').classList.add('hidden'); 
+            document.getElementById('pdf-preview-content').innerHTML = ""; // NEU HIER
         };
 
         window.saveNewOrder = async function() {
@@ -1552,10 +1625,7 @@
 
             const p = {
                 customerName: document.getElementById('form-customerName').value.trim(),
-                street: street,
-                zip: zip,
-                city: city,
-                address: `${street}, ${zip} ${city}`,
+                street: street, zip: zip, city: city, address: `${street}, ${zip} ${city}`,
                 phone: document.getElementById('form-phone').value.trim(),
                 deliveryType: document.getElementById('form-deliveryType').value,
                 deliveryDate: document.getElementById('form-date').value,
@@ -1569,17 +1639,11 @@
             if(!p.customerName || !street || !zip || !city) return alert("Name und komplette Adresse (Straße, PLZ, Ort) sind Pflichtfelder!");
             
             if(window.editingOrderId) {
-                p.status = document.getElementById('form-status').value;
-                p.updatedBy = currentUserName;
-                p.updatedAt = new Date().toLocaleString('de-DE');
+                p.status = document.getElementById('form-status').value; p.updatedBy = currentUserName; p.updatedAt = new Date().toLocaleString('de-DE');
                 await updateOrder(window.editingOrderId, p);
-            }
-            else {
-                p.status = 'offen'; 
-                p.createdBy = currentUserName; 
-                p.createdAt = new Date().toLocaleString('de-DE');
-                p.updatedBy = currentUserName;
-                p.updatedAt = new Date().toLocaleString('de-DE');
+            } else {
+                p.status = 'offen'; p.createdBy = currentUserName; p.createdAt = new Date().toLocaleString('de-DE');
+                p.updatedBy = currentUserName; p.updatedAt = new Date().toLocaleString('de-DE');
 
                 if (isFirebaseConnected && db) await addDoc(collection(db, 'artifacts', 'saelog-logistik', 'public', 'data', 'orders'), p);
                 else { p.id = "local-"+Date.now(); orders.push(p); localStorage.setItem('saelog_orders', JSON.stringify(orders)); renderAll(); }
@@ -1587,24 +1651,16 @@
             closeNewOrderModal();
         };
 
-        window.updateOrderStatus = function(id, status) { 
-            updateOrder(id, { status: status, updatedBy: currentUserName, updatedAt: new Date().toLocaleString('de-DE') }); 
-        };
+        window.updateOrderStatus = function(id, status) { updateOrder(id, { status: status, updatedBy: currentUserName, updatedAt: new Date().toLocaleString('de-DE') }); };
 
         async function updateOrder(id, payload) {
             if (isFirebaseConnected && db) await updateDoc(doc(db, 'artifacts', 'saelog-logistik', 'public', 'data', 'orders', id), payload);
-            else {
-                const order = orders.find(o => o.id === id);
-                if(order) { Object.assign(order, payload); localStorage.setItem('saelog_orders', JSON.stringify(orders)); renderAll(); }
-            }
+            else { const order = orders.find(o => o.id === id); if(order) { Object.assign(order, payload); localStorage.setItem('saelog_orders', JSON.stringify(orders)); renderAll(); } }
         }
 
         window.showOrderDetails = function(id) {
-            const order = orders.find(o => o.id === id);
-            if (!order) return;
-
-            const content = document.getElementById('details-content');
-            const footer = document.getElementById('details-footer');
+            const order = orders.find(o => o.id === id); if (!order) return;
+            const content = document.getElementById('details-content'); const footer = document.getElementById('details-footer');
 
             let typeBadge = '';
             if (order.deliveryType === 'pickup') typeBadge = '<span class="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs px-2.5 py-1 rounded-full font-bold uppercase tracking-wider">Abholung</span>';
@@ -1613,64 +1669,34 @@
 
             const expressBadge = order.isUrgent ? `<span class="bg-purple-500/20 text-purple-400 text-xs px-2.5 py-1 rounded-full font-bold uppercase border border-purple-500/30 ml-2 shadow-[0_0_10px_rgba(168,85,247,0.3)]"><i class="fa-solid fa-bolt text-yellow-300 mr-1"></i> Express</span>` : '';
 
-            let notesHtml = order.notes 
-                ? `<div class="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
-                    <p class="text-[10px] text-yellow-500 font-bold uppercase tracking-wider mb-1"><i class="fa-regular fa-note-sticky mr-1"></i> Interne Notiz</p>
-                    <p class="text-sm text-yellow-100 whitespace-pre-wrap">${order.notes}</p>
-                   </div>`
-                : '';
+            let notesHtml = order.notes ? `<div class="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl"><p class="text-[10px] text-yellow-500 font-bold uppercase tracking-wider mb-1"><i class="fa-regular fa-note-sticky mr-1"></i> Interne Notiz</p><p class="text-sm text-yellow-100 whitespace-pre-wrap">${order.notes}</p></div>` : '';
 
-            let pdfHtml = '';
-            let orderPdfs = order.pdfs ? order.pdfs : (order.pdfBase64 ? [{name: "Lieferschein", base64: order.pdfBase64}] : []);
-            
+            let pdfHtml = ''; let orderPdfs = order.pdfs ? order.pdfs : (order.pdfBase64 ? [{name: "Lieferschein", base64: order.pdfBase64}] : []);
             if(orderPdfs.length > 0) {
                 pdfHtml = `<div class="mt-4 space-y-2">`;
-                orderPdfs.forEach((p, idx) => {
-                    pdfHtml += `<button onclick="viewPDFDataByIndex('${order.id}', ${idx})" class="w-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold py-3 rounded-xl border border-rose-500/20 text-sm transition flex justify-center items-center"><i class="fa-solid fa-file-pdf mr-2 text-lg"></i> ${p.name || 'Dokument öffnen'}</button>`;
-                });
+                orderPdfs.forEach((p, idx) => { pdfHtml += `<button onclick="viewPDFDataByIndex('${order.id}', ${idx})" class="w-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold py-3 rounded-xl border border-rose-500/20 text-sm transition flex justify-center items-center"><i class="fa-solid fa-file-pdf mr-2 text-lg"></i> ${p.name || 'Dokument öffnen'}</button>`; });
                 pdfHtml += `</div>`;
-            } else {
-                pdfHtml = `<div class="bg-slate-900/40 p-4 rounded-xl border border-dashed border-slate-700/60 text-center text-xs mt-4 text-slate-500">Keine PDFs hinterlegt.</div>`;
-            }
+            } else { pdfHtml = `<div class="bg-slate-900/40 p-4 rounded-xl border border-dashed border-slate-700/60 text-center text-xs mt-4 text-slate-500">Keine PDFs hinterlegt.</div>`; }
 
-            let photoHtml = order.deliveryPhotoBase64 
-                ? `<div class="mt-4"><label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2"><i class="fa-solid fa-camera text-emerald-400 mr-1"></i> Beweis-Foto Zustellung</label>
-                   <img src="${order.deliveryPhotoBase64}" class="w-full h-48 object-cover rounded-xl border border-slate-700 shadow-lg cursor-pointer" onclick="window.open(this.src, '_blank')" alt="Beweisfoto"></div>` : '';
+            let photoHtml = order.deliveryPhotoBase64 ? `<div class="mt-4"><label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2"><i class="fa-solid fa-camera text-emerald-400 mr-1"></i> Beweis-Foto Zustellung</label><img src="${order.deliveryPhotoBase64}" class="w-full h-48 object-cover rounded-xl border border-slate-700 shadow-lg cursor-pointer" onclick="window.open(this.src, '_blank')" alt="Beweisfoto"></div>` : '';
 
-            let auditHtml = `
-                <div class="mt-4 p-3 bg-slate-900/50 rounded-lg border border-slate-700/50">
-                    <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-1"><i class="fa-solid fa-clock-rotate-left"></i> Verlauf</p>
-                    <p class="text-xs text-slate-400">Erfasst von: <span class="text-slate-200">${order.createdBy || 'System'}</span> ${order.createdAt ? `am ${order.createdAt}` : ''}</p>
-                    <p class="text-xs text-slate-400">Letztes Update: <span class="text-slate-200">${order.updatedBy || '-'}</span> ${order.updatedAt ? `am ${order.updatedAt}` : ''}</p>
-                </div>`;
+            let auditHtml = `<div class="mt-4 p-3 bg-slate-900/50 rounded-lg border border-slate-700/50"><p class="text-[10px] text-slate-500 uppercase tracking-wider mb-1"><i class="fa-solid fa-clock-rotate-left"></i> Verlauf</p><p class="text-xs text-slate-400">Erfasst von: <span class="text-slate-200">${order.createdBy || 'System'}</span> ${order.createdAt ? `am ${order.createdAt}` : ''}</p><p class="text-xs text-slate-400">Letztes Update: <span class="text-slate-200">${order.updatedBy || '-'}</span> ${order.updatedAt ? `am ${order.updatedAt}` : ''}</p></div>`;
 
             content.innerHTML = `
                 <div class="flex items-start justify-between"><div><span class="text-[10px] font-bold text-slate-400 uppercase">Kunde</span><h4 class="text-xl font-bold text-white flex items-center">${order.customerName}</h4></div>${typeBadge}</div>
                 ${expressBadge ? `<div class="mt-2">${expressBadge}</div>` : ''}
-                
                 <div class="space-y-2 bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 text-sm text-slate-300 mt-4 relative shadow-inner">
-                    <button onclick="openSingleRouteInMaps('${encodeURIComponent(order.address)}')" class="absolute top-4 right-4 bg-blue-500/20 text-blue-400 hover:bg-blue-500/40 hover:text-white p-2.5 rounded-xl transition border border-blue-500/30 shadow-lg" title="In Google Maps navigieren">
-                        <i class="fa-solid fa-map-location-dot text-lg"></i>
-                    </button>
-                    
+                    <button onclick="openSingleRouteInMaps('${encodeURIComponent(order.address)}')" class="absolute top-4 right-4 bg-blue-500/20 text-blue-400 hover:bg-blue-500/40 hover:text-white p-2.5 rounded-xl transition border border-blue-500/30 shadow-lg" title="In Google Maps navigieren"><i class="fa-solid fa-map-location-dot text-lg"></i></button>
                     <p class="pr-12"><i class="fa-solid fa-location-dot text-teal-400 w-5"></i> ${order.address}</p>
                     <p><i class="fa-solid fa-clock text-teal-400 w-5"></i> ${order.deliveryDate ? order.deliveryDate.split('-').reverse().join('.') : ''} ${order.deliveryTime || ''}</p>
                     <p><i class="fa-solid fa-phone text-teal-400 w-5"></i> ${order.phone || 'Keine Nummer'}</p>
                     <p><i class="fa-solid fa-money-bill-wave text-teal-400 w-5"></i> Bezahlung: <span class="font-bold text-white">${order.paymentMethod && order.paymentMethod !== 'Offen' ? order.paymentMethod : 'Keine Angabe'}</span></p>
                     <p><i class="fa-solid fa-signal text-teal-400 w-5"></i> <span class="uppercase text-teal-300 font-bold">${order.status.replace('_',' ')}</span></p>
                 </div>
-                ${notesHtml}
-                ${auditHtml}
-                ${photoHtml}
-                ${pdfHtml}
+                ${notesHtml} ${auditHtml} ${photoHtml} ${pdfHtml}
             `;
 
-            const adminBtns = (currentUserRole === 'admin') ? `
-                <div class="flex space-x-1.5">
-                    <button onclick="editOrder('${order.id}')" class="bg-blue-500/10 text-blue-400 p-3 rounded-xl border border-blue-500/10 hover:bg-blue-500/20 transition" title="Bearbeiten"><i class="fa-solid fa-pen"></i></button>
-                    <button onclick="deleteOrder('${order.id}')" class="bg-rose-500/10 text-rose-400 p-3 rounded-xl border border-rose-500/10 hover:bg-rose-500/20 transition" title="Löschen"><i class="fa-solid fa-trash-can"></i></button>
-                </div>` : '';
-
+            const adminBtns = (currentUserRole === 'admin') ? `<div class="flex space-x-1.5"><button onclick="editOrder('${order.id}')" class="bg-blue-500/10 text-blue-400 p-3 rounded-xl border border-blue-500/10 hover:bg-blue-500/20 transition" title="Bearbeiten"><i class="fa-solid fa-pen"></i></button><button onclick="deleteOrder('${order.id}')" class="bg-rose-500/10 text-rose-400 p-3 rounded-xl border border-rose-500/10 hover:bg-rose-500/20 transition" title="Löschen"><i class="fa-solid fa-trash-can"></i></button></div>` : '';
             footer.innerHTML = `${adminBtns}<button onclick="closeDetailsModal()" class="flex-grow bg-slate-700 text-slate-200 font-bold py-3 rounded-xl">Schließen</button>`;
             document.getElementById('modal-details').classList.remove('hidden');
         };
@@ -1686,11 +1712,8 @@
         };
 
         window.viewPDFDataByIndex = function(id, index) {
-            const order = orders.find(o => o.id === id);
-            if (!order) return;
-            let pdfs = order.pdfs ? order.pdfs : (order.pdfBase64 ? [{base64: order.pdfBase64}] : []);
-            if(!pdfs[index] || !pdfs[index].base64) return;
-            
+            const order = orders.find(o => o.id === id); if (!order) return;
+            let pdfs = order.pdfs ? order.pdfs : (order.pdfBase64 ? [{base64: order.pdfBase64}] : []); if(!pdfs[index] || !pdfs[index].base64) return;
             try {
                 const arr = pdfs[index].base64.split(','); const bstr = atob(arr[1] || arr[0]); let n = bstr.length;
                 const u8arr = new Uint8Array(n); while(n--) u8arr[n] = bstr.charCodeAt(n);
@@ -1700,40 +1723,53 @@
 
         function setupPDFParser() {
             document.getElementById('pdf-file-input').addEventListener('change', async (e) => {
-                const files = e.target.files; 
-                if (!files || files.length === 0) return;
-                
+                const files = e.target.files; if (!files || files.length === 0) return;
                 for(let i=0; i < files.length; i++) {
-                    let file = files[i];
+                    let file = files[i]; 
+                    
+                    // 1. Für die Vorschau (wie im Original)
                     const r1 = new FileReader();
-                    r1.onload = (ev) => {
-                        window.tempPdfs.push({ name: file.name, base64: ev.target.result });
-                        renderPdfList();
-                    };
+                    r1.onload = (ev) => { window.tempPdfs.push({ name: file.name, base64: ev.target.result }); renderPdfList(); };
                     r1.readAsDataURL(file);
 
+                    // 2. Für das Text-Auslesen (nur bei der ersten Datei)
                     if(i === 0) {
                         const r2 = new FileReader();
                         r2.onload = async (ev) => {
                             try {
                                 const pdf = await pdfjsLib.getDocument(new Uint8Array(ev.target.result)).promise;
-                                let txt = ""; 
+                                let allItems = [];
                                 for(let pNum=1; pNum<=pdf.numPages; pNum++) { 
                                     const page = await pdf.getPage(pNum); 
                                     const content = await page.getTextContent(); 
-                                    txt += content.items.map(it => it.str).join(" ") + " \n"; 
+                                    content.items.forEach(item => {
+                                        if (item.str.trim().length > 0) {
+                                            allItems.push({ text: item.str.trim(), x: item.transform[4], y: item.transform[5] });
+                                        }
+                                    });
                                 }
-                                if(txt.toLowerCase().includes("abholung")) document.getElementById('form-deliveryType').value = "pickup";
-                                else if(txt.toLowerCase().includes("montage")) document.getElementById('form-deliveryType').value = "montage";
+                                allItems.sort((a, b) => b.y - a.y);
                                 
-                                const pMatch = txt.match(/(?:tel|mobil)[\s.:]*([+\d\s\-/()]{6,20})/i);
-                                if(pMatch) document.getElementById('form-phone').value = pMatch[1].trim();
-                            } catch(err) {} 
+                                // Typ erkennen (Abholung/Montage) anhand des gesamten Textes
+                                let fullText = allItems.map(i => i.text).join(" ").toLowerCase();
+                                if(fullText.includes("abholung")) document.getElementById('form-deliveryType').value = "pickup";
+                                else if(fullText.includes("montage")) document.getElementById('form-deliveryType').value = "montage";
+
+                                const plzIdx = allItems.findIndex(i => /^\d{5}$/.test(i.text));
+                                if(plzIdx !== -1) {
+                                    const plzItem = allItems[plzIdx];
+                                    document.getElementById('form-zip').value = plzItem.text;
+                                    document.getElementById('form-city').value = allItems[plzIdx+1] ? allItems[plzIdx+1].text : "";
+                                    
+                                    const block = allItems.filter(i => i.y > plzItem.y && Math.abs(i.x - plzItem.x) < 50).sort((a,b) => b.y - a.y);
+                                    if(block.length > 0) document.getElementById('form-street').value = block[0].text;
+                                    if(block.length > 1) document.getElementById('form-customerName').value = block[1].text;
+                                }
+                            } catch(err) { console.error("PDF Fehler:", err); }
                         };
                         r2.readAsArrayBuffer(file);
                     }
                 }
-                
                 document.getElementById('pdf-file-input').value = "";
             });
         }
