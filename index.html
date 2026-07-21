@@ -803,9 +803,9 @@
         function listenToPins() {
             if (!db) return;
             if (dbUnsubscribePins) dbUnsubscribePins();
-            dbUnsubscribePins = onSnapshot(doc(db, 'saelog_settings', 'pins'), (snap) => {
+            dbUnsubscribePins = onSnapshot(doc(db, 'artifacts', 'saelog-logistik', 'public', 'data', 'settings', 'pins'), (snap) => {
                 if (snap.exists()) { PINS = snap.data(); localStorage.setItem('saelog_pins', JSON.stringify(PINS)); } 
-                else { setDoc(doc(db, 'saelog_settings', 'pins'), PINS); }
+                else { setDoc(doc(db, 'artifacts', 'saelog-logistik', 'public', 'data', 'settings', 'pins'), PINS); }
             });
         }
 
@@ -813,7 +813,7 @@
         function listenToPersonalPlan() {
             if (!db) return;
             if (dbUnsubscribePersonal) dbUnsubscribePersonal();
-            dbUnsubscribePersonal = onSnapshot(doc(db, 'saelog_data', 'personalplan'), (snap) => {
+            dbUnsubscribePersonal = onSnapshot(doc(db, 'artifacts', 'saelog-logistik', 'public', 'data', 'plan', 'personalplan'), (snap) => {
                 if (snap.exists()) {
                     personalPlanData = snap.data();
                     migratePersonalDataFormat();
@@ -855,8 +855,11 @@
             if(!newPins.admin || !newPins.logistiker || !newPins.fahrer || !newPins.montage) return alert("Bitte alle Felder ausfüllen!");
 
             PINS = newPins;
-            if (isFirebaseConnected && db) await setDoc(doc(db, 'saelog_settings', 'pins'), newPins);
-            else localStorage.setItem('saelog_pins', JSON.stringify(newPins));
+            if (isFirebaseConnected && db) {
+                await setDoc(doc(db, 'artifacts', 'saelog-logistik', 'public', 'data', 'settings', 'pins'), newPins);
+            } else {
+                localStorage.setItem('saelog_pins', JSON.stringify(newPins));
+            }
             
             alert("PINs erfolgreich geändert!");
             closeSettingsModal();
@@ -970,7 +973,7 @@
         }
 
         // ==========================================
-        // PERSONALPLAN (KORRIGIERTES SPEICHERN)
+        // PERSONALPLAN SPEICHERLOGIK (KORRIGIERT)
         // ==========================================
         window.setPersonalPerson = function(name) {
             if(isPlanEditing) window.updatePersonalDataFromDOM();
@@ -1003,12 +1006,12 @@
             try {
                 window.updatePersonalDataFromDOM();
                 
-                // Zuerst lokal sichern als Backup
+                // Lokales Backup
                 localStorage.setItem('saelog_personalplan', JSON.stringify(personalPlanData));
 
-                // Dann in Firebase sichern
+                // In Firebase unter dem freigegebenen Pfad speichern
                 if (isFirebaseConnected && db) {
-                    await setDoc(doc(db, 'saelog_data', 'personalplan'), personalPlanData);
+                    await setDoc(doc(db, 'artifacts', 'saelog-logistik', 'public', 'data', 'plan', 'personalplan'), personalPlanData);
                 }
                 
                 isPlanEditing = false;
@@ -1021,7 +1024,7 @@
         };
 
         window.updatePersonalDataFromDOM = function() {
-            if (!isPlanEditing) return; // Schutz: Nur auslesen, wenn bearbeitet wird!
+            if (!isPlanEditing) return;
 
             if (!personalPlanData[activePerson]) personalPlanData[activePerson] = {};
             if (Array.isArray(personalPlanData[activePerson])) migratePersonalDataFormat();
