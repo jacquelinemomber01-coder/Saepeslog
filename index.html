@@ -223,7 +223,7 @@
             </div>
         </div>
 
-        <!-- SEITE 4: PLAN (MIT PLUS- / MINUSSTUNDEN) -->
+        <!-- SEITE 4: PLAN (NUR FÜR BÜRO SICHTBAR) -->
         <div id="page-plan" class="space-y-6 hidden">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
@@ -354,7 +354,7 @@
                 </div>
                 <span class="text-[10px] tracking-wide">Montage</span>
             </button>
-            <button onclick="switchTab('plan')" id="tab-plan" class="flex flex-col items-center space-y-1 py-1.5 text-slate-400 font-medium transition-all duration-200">
+            <button onclick="switchTab('plan')" id="tab-plan" class="hidden flex-col items-center space-y-1 py-1.5 text-slate-400 font-medium transition-all duration-200">
                 <i class="fa-solid fa-calendar-days text-xl"></i>
                 <span class="text-[10px] tracking-wide">Plan</span>
             </button>
@@ -730,7 +730,7 @@
 
         let selectedMontageDate = new Date().toISOString().split('T')[0];
 
-        // Personalplan
+        // Personalplan Data
         let personalPlanData = { Helga: {}, Jacky: {} };
         let activePerson = 'Helga';
         window.selectedMonth = new Date().toISOString().substring(0,7); 
@@ -803,9 +803,9 @@
         function listenToPins() {
             if (!db) return;
             if (dbUnsubscribePins) dbUnsubscribePins();
-            dbUnsubscribePins = onSnapshot(doc(db, 'artifacts', 'saelog-logistik', 'public', 'settings', 'pins'), (snap) => {
+            dbUnsubscribePins = onSnapshot(doc(db, 'saelog_settings', 'pins'), (snap) => {
                 if (snap.exists()) { PINS = snap.data(); localStorage.setItem('saelog_pins', JSON.stringify(PINS)); } 
-                else { setDoc(doc(db, 'artifacts', 'saelog-logistik', 'public', 'settings', 'pins'), PINS); }
+                else { setDoc(doc(db, 'saelog_settings', 'pins'), PINS); }
             });
         }
 
@@ -813,7 +813,7 @@
         function listenToPersonalPlan() {
             if (!db) return;
             if (dbUnsubscribePersonal) dbUnsubscribePersonal();
-            dbUnsubscribePersonal = onSnapshot(doc(db, 'artifacts', 'saelog-logistik', 'public', 'data', 'personalplan'), (snap) => {
+            dbUnsubscribePersonal = onSnapshot(doc(db, 'saelog_data', 'personalplan'), (snap) => {
                 if (snap.exists()) {
                     personalPlanData = snap.data();
                     migratePersonalDataFormat();
@@ -855,7 +855,7 @@
             if(!newPins.admin || !newPins.logistiker || !newPins.fahrer || !newPins.montage) return alert("Bitte alle Felder ausfüllen!");
 
             PINS = newPins;
-            if (isFirebaseConnected && db) await setDoc(doc(db, 'artifacts', 'saelog-logistik', 'public', 'settings', 'pins'), newPins);
+            if (isFirebaseConnected && db) await setDoc(doc(db, 'saelog_settings', 'pins'), newPins);
             else localStorage.setItem('saelog_pins', JSON.stringify(newPins));
             
             alert("PINs erfolgreich geändert!");
@@ -916,20 +916,23 @@
 
             const btnSettings = document.getElementById('btn-settings');
             const tabAdmin = document.getElementById('tab-admin');
+            const tabPlan = document.getElementById('tab-plan');
             
             if (role === 'admin') { 
                 btnSettings.classList.remove('hidden'); btnSettings.classList.add('flex'); 
                 tabAdmin.classList.remove('hidden'); tabAdmin.classList.add('flex');
+                tabPlan.classList.remove('hidden'); tabPlan.classList.add('flex');
             } else { 
                 btnSettings.classList.add('hidden'); btnSettings.classList.remove('flex'); 
                 tabAdmin.classList.add('hidden'); tabAdmin.classList.remove('flex');
+                tabPlan.classList.add('hidden'); tabPlan.classList.remove('flex');
             }
 
-            ['btn-new-order', 'tab-logistiker', 'tab-fahrer', 'tab-montage', 'tab-plan', 'tab-archiv'].forEach(id => document.getElementById(id)?.classList.remove('hidden'));
+            ['btn-new-order', 'tab-logistiker', 'tab-fahrer', 'tab-montage', 'tab-archiv'].forEach(id => document.getElementById(id)?.classList.remove('hidden'));
 
-            if (role === 'fahrer') { ['btn-new-order', 'tab-logistiker', 'tab-montage', 'tab-archiv', 'tab-admin'].forEach(id => document.getElementById(id)?.classList.add('hidden')); switchTab('fahrer'); } 
-            else if (role === 'logistiker') { ['tab-fahrer', 'tab-montage', 'tab-admin'].forEach(id => document.getElementById(id)?.classList.add('hidden')); switchTab('logistiker'); } 
-            else if (role === 'montage') { ['btn-new-order', 'tab-logistiker', 'tab-fahrer', 'tab-archiv', 'tab-admin'].forEach(id => document.getElementById(id)?.classList.add('hidden')); switchTab('montage'); } 
+            if (role === 'fahrer') { ['btn-new-order', 'tab-logistiker', 'tab-montage', 'tab-archiv', 'tab-admin', 'tab-plan'].forEach(id => document.getElementById(id)?.classList.add('hidden')); switchTab('fahrer'); } 
+            else if (role === 'logistiker') { ['tab-fahrer', 'tab-montage', 'tab-admin', 'tab-plan'].forEach(id => document.getElementById(id)?.classList.add('hidden')); switchTab('logistiker'); } 
+            else if (role === 'montage') { ['btn-new-order', 'tab-logistiker', 'tab-fahrer', 'tab-archiv', 'tab-admin', 'tab-plan'].forEach(id => document.getElementById(id)?.classList.add('hidden')); switchTab('montage'); } 
             else { switchTab('logistiker'); }
         }
 
@@ -967,7 +970,7 @@
         }
 
         // ==========================================
-        // PERSONALPLAN (MIT PLUS- / MINUSSTUNDEN)
+        // PERSONALPLAN (KORRIGIERTES SPEICHERN)
         // ==========================================
         window.setPersonalPerson = function(name) {
             if(isPlanEditing) window.updatePersonalDataFromDOM();
@@ -1000,48 +1003,41 @@
             try {
                 window.updatePersonalDataFromDOM();
                 
+                // Zuerst lokal sichern als Backup
+                localStorage.setItem('saelog_personalplan', JSON.stringify(personalPlanData));
+
+                // Dann in Firebase sichern
                 if (isFirebaseConnected && db) {
-                    try {
-                        await setDoc(doc(db, 'artifacts', 'saelog-logistik', 'public', 'data', 'personalplan'), personalPlanData);
-                    } catch(err) {
-                        localStorage.setItem('saelog_personalplan', JSON.stringify(personalPlanData));
-                    }
-                } else {
-                    localStorage.setItem('saelog_personalplan', JSON.stringify(personalPlanData));
+                    await setDoc(doc(db, 'saelog_data', 'personalplan'), personalPlanData);
                 }
                 
                 isPlanEditing = false;
                 renderPersonalPlan();
                 alert(`Arbeitsplan für ${activePerson} erfolgreich gespeichert!`);
             } catch(e) {
+                console.error("Speicherfehler:", e);
                 alert("Fehler beim Speichern: " + e.message);
             }
         };
 
         window.updatePersonalDataFromDOM = function() {
-            if(!personalPlanData[activePerson]) personalPlanData[activePerson] = {};
-            if(Array.isArray(personalPlanData[activePerson])) migratePersonalDataFormat();
+            if (!isPlanEditing) return; // Schutz: Nur auslesen, wenn bearbeitet wird!
+
+            if (!personalPlanData[activePerson]) personalPlanData[activePerson] = {};
+            if (Array.isArray(personalPlanData[activePerson])) migratePersonalDataFormat();
 
             let monthRows = [];
             document.querySelectorAll('.plan-row').forEach(tr => {
                 monthRows.push({
-                    date: tr.querySelector('.plan-date').value,
-                    weekday: tr.querySelector('.plan-weekday').value,
-                    time: tr.querySelector('.plan-time').value,
-                    hours1: tr.querySelector('.plan-hours1').value,
-                    hours2: tr.querySelector('.plan-hours2').value
+                    date: tr.querySelector('.plan-date')?.value || '',
+                    weekday: tr.querySelector('.plan-weekday')?.value || '',
+                    time: tr.querySelector('.plan-time')?.value || '',
+                    hours1: tr.querySelector('.plan-hours1')?.value || '0',
+                    hours2: tr.querySelector('.plan-hours2')?.value || '0'
                 });
             });
-            
-            let buckets = personalPlanData[activePerson];
-            if(!buckets[window.selectedMonth]) buckets[window.selectedMonth] = [];
-            buckets[window.selectedMonth] = [];
-            
-            monthRows.forEach(r => {
-                let targetMonth = r.date ? r.date.substring(0,7) : window.selectedMonth;
-                if(!buckets[targetMonth]) buckets[targetMonth] = [];
-                buckets[targetMonth].push(r);
-            });
+
+            personalPlanData[activePerson][window.selectedMonth] = monthRows;
         };
 
         window.renderPersonalPlan = function() {
