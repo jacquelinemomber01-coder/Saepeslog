@@ -209,7 +209,6 @@
                 </div>
             </div>
             
-            <!-- Container für UNGEREICHTETE Montagen -->
             <div id="pending-montage-container"></div>
 
             <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-3 flex items-center space-x-2 overflow-x-auto no-scrollbar shadow-lg mt-4">
@@ -224,45 +223,50 @@
             </div>
         </div>
 
-        <!-- SEITE 4: PLAN (ARBEITSPLAN FÜR ALLE SICHTBAR & ÜBERSICHTLICH) -->
+        <!-- SEITE 4: PLAN (MIT PLUS- / MINUSSTUNDEN) -->
         <div id="page-plan" class="space-y-6 hidden">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h2 class="text-2xl font-bold text-white">Arbeitsplan & Stunden</h2>
-                    <p class="text-sm text-slate-400">Übersicht der Arbeitszeiten (25-Stunden-Woche).</p>
+                    <p class="text-sm text-slate-400">Übersicht der Arbeitszeiten und Soll-/Ist-Saldo.</p>
                 </div>
-                <div id="plan-action-buttons" class="flex items-center gap-2">
-                    <!-- Buttons werden dynamisch je nach Bearbeitungsmodus gesteuert -->
-                </div>
+                <div id="plan-action-buttons" class="flex items-center gap-2"></div>
             </div>
             
-            <!-- Personenauswahl Tabs -->
             <div class="flex space-x-2 border-b border-slate-700/50 pb-2">
                 <button onclick="setPersonalPerson('Helga')" id="btn-pers-helga" class="bg-teal-500 text-slate-900 font-bold px-6 py-2.5 rounded-t-xl transition">Helga</button>
                 <button onclick="setPersonalPerson('Jacky')" id="btn-pers-jacky" class="bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold px-6 py-2.5 rounded-t-xl transition">Jacky</button>
             </div>
 
-            <!-- Hauptcontainer für Plan -->
             <div class="bg-slate-800/50 rounded-b-2xl rounded-tr-2xl border border-slate-700/50 p-4 md:p-5 overflow-hidden shadow-lg">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
                     <h3 class="font-bold text-white text-lg flex items-center">Plan für <span id="pers-name-display" class="text-teal-400 ml-1.5">Helga</span></h3>
-                    <!-- MONATS-AUSWAHL -->
                     <div class="flex items-center bg-slate-900 rounded-xl border border-slate-700 px-2 overflow-hidden">
                         <i class="fa-solid fa-calendar-days text-slate-400 text-xs ml-2"></i>
                         <input type="month" id="month-picker" onchange="changePersonalMonth(this.value)" class="bg-transparent text-white font-bold text-sm px-2 py-2 outline-none cursor-pointer">
                     </div>
                 </div>
                 
-                <!-- DYNAMISCHER CONTAINER -->
                 <div id="plan-content-wrapper"></div>
 
-                <!-- ZUSAMMENFASSUNG / SUMMEN -->
-                <div class="mt-6 p-4 bg-slate-900 border border-slate-700 rounded-xl flex flex-col sm:flex-row justify-between items-center shadow-inner">
-                    <div class="flex items-center space-x-3 mb-2 sm:mb-0">
-                        <div class="bg-teal-500/10 text-teal-400 p-2 rounded-lg"><i class="fa-solid fa-chart-line"></i></div>
-                        <span class="text-slate-300 font-bold uppercase tracking-wider text-xs">Gesamtstunden Erbracht (Alle Monate)</span>
+                <!-- SUMMEN- & PLUS-/MINUSSTUNDEN ANZEIGE -->
+                <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div class="p-4 bg-slate-900 border border-slate-700/80 rounded-xl flex flex-col justify-between shadow-inner">
+                        <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Soll-Stunden (Monat)</span>
+                        <div class="mt-2 text-slate-200 font-black text-xl tracking-wide"><span id="month-soll">0.00</span> <span class="text-xs text-slate-500">h</span></div>
                     </div>
-                    <span class="text-teal-400 font-black text-2xl tracking-wide"><span id="overall-sum">0.00</span> <span class="text-sm font-bold text-slate-500">h</span></span>
+                    <div class="p-4 bg-slate-900 border border-slate-700/80 rounded-xl flex flex-col justify-between shadow-inner">
+                        <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Erbrachte Ist-Stunden (Monat)</span>
+                        <div class="mt-2 text-teal-300 font-black text-xl tracking-wide"><span id="month-ist">0.00</span> <span class="text-xs text-slate-500">h</span></div>
+                    </div>
+                    <div class="p-4 bg-slate-900 border border-slate-700/80 rounded-xl flex flex-col justify-between shadow-inner">
+                        <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Monats-Saldo (Plus/Minus)</span>
+                        <div class="mt-2 font-black text-xl tracking-wide"><span id="month-diff">+0.00 h</span></div>
+                    </div>
+                    <div class="p-4 bg-slate-900 border border-slate-700/80 rounded-xl flex flex-col justify-between shadow-inner">
+                        <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Gesamt-Saldo (Alle Monate)</span>
+                        <div class="mt-2 font-black text-2xl tracking-wide"><span id="overall-diff">+0.00 h</span></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -291,18 +295,39 @@
             </div>
         </div>
 
-        <!-- SEITE 6: BÜRO / ADMIN EINSTELLUNGEN -->
-        <div id="page-admin" class="space-y-6 hidden">
-            <div class="flex justify-between items-end">
+        <!-- SEITE 6: BÜRO / ADMIN & FOTO-GALERIE & PAKET-ABLAGE -->
+        <div id="page-admin" class="space-y-8 hidden">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h2 class="text-2xl font-bold text-white">Büro & Verwaltung</h2>
-                    <p class="text-sm text-slate-400">Systemeinstellungen und PIN-Verwaltung.</p>
+                    <h2 class="text-2xl font-bold text-white">Büro & Foto-Verwaltung</h2>
+                    <p class="text-sm text-slate-400">Pakete verwalten, Zustellfotos einsehen und PINs anpassen.</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="openParcelModal()" class="bg-teal-500 hover:bg-teal-600 text-slate-900 font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-lg flex items-center">
+                        <i class="fa-solid fa-box-archive mr-2"></i> Neues Paket erfassen
+                    </button>
+                    <button onclick="openSettingsModal()" class="bg-slate-700 hover:bg-slate-600 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition border border-slate-600 flex items-center">
+                        <i class="fa-solid fa-gear mr-2"></i> PINs ändern
+                    </button>
                 </div>
             </div>
-            <div class="bg-slate-800/50 rounded-2xl border border-slate-700/50 p-6 space-y-4">
-                <h3 class="font-bold text-white text-lg">System-Status & Einstellungen</h3>
-                <p class="text-sm text-slate-300">Über das Zahnrad-Symbol oben rechts kannst du jederzeit die Zugangs-PINs für alle Arbeitsbereiche anpassen.</p>
-                <button onclick="openSettingsModal()" class="bg-teal-500 hover:bg-teal-600 text-slate-900 font-bold px-5 py-3 rounded-xl text-xs transition shadow-lg"><i class="fa-solid fa-gear mr-2"></i> PINs & Einstellungen öffnen</button>
+
+            <!-- SEKTION 1: PAKETSENDUNGEN MIT FOTO -->
+            <div class="space-y-4">
+                <h3 class="text-base font-bold text-white flex items-center space-x-2 border-b border-slate-700/50 pb-2">
+                    <i class="fa-solid fa-boxes-packing text-teal-400"></i>
+                    <span>Abgelegte Paket-Sendungen & Tracking</span>
+                </h3>
+                <div id="admin-parcels-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            </div>
+
+            <!-- SEKTION 2: GALERIE DER GEMACHTEN ZUSTELLFOTOS -->
+            <div class="space-y-4">
+                <h3 class="text-base font-bold text-white flex items-center space-x-2 border-b border-slate-700/50 pb-2">
+                    <i class="fa-solid fa-images text-emerald-400"></i>
+                    <span>Galerie aller gemachten Zustellfotos</span>
+                </h3>
+                <div id="admin-delivery-gallery" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
             </div>
         </div>
 
@@ -344,6 +369,54 @@
         </div>
     </nav>
     
+    <!-- MODAL: PAKET MIT SENDUNGSNUMMER ODER FOTO ERFASSEN -->
+    <div id="modal-parcel" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[70] flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-800 border border-slate-700/80 rounded-2xl w-full max-w-md overflow-hidden flex flex-col shadow-2xl">
+            <div class="p-5 border-b border-slate-700/50 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-white flex items-center space-x-2">
+                    <i class="fa-solid fa-box-archive text-teal-400"></i>
+                    <span>Paket ablegen</span>
+                </h3>
+                <button onclick="closeParcelModal()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Kundenname *</label>
+                    <input type="text" id="parcel-customerName" placeholder="z. B. Max Mustermann" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-teal-500 text-sm">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Paket- / Sendungsnummer (Optional / per Foto)</label>
+                    <input type="text" id="parcel-trackingNo" placeholder="z. B. DHL / DPD 123456789 (oder Foto nutzen)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-teal-500 font-mono text-sm">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Foto des Pakets / Etiketts</label>
+                    <div id="parcel-photo-preview-container" class="hidden relative w-full h-44 bg-slate-900 rounded-xl overflow-hidden border border-slate-700 mb-2">
+                        <img id="parcel-photo-preview" class="w-full h-full object-cover" src="" alt="Vorschau">
+                        <button onclick="removeParcelPhoto()" class="absolute top-2 right-2 bg-rose-500 text-white w-8 h-8 rounded-full shadow-lg flex items-center justify-center"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+
+                    <label id="parcel-photo-upload-label" class="block w-full bg-slate-900 border-2 border-dashed border-slate-600 hover:border-teal-500 text-slate-400 hover:text-teal-400 rounded-xl p-5 text-center cursor-pointer transition">
+                        <i class="fa-solid fa-camera text-2xl mb-1"></i>
+                        <p class="text-xs font-bold uppercase tracking-wider">Etikett / Paket fotografieren</p>
+                        <span class="text-[10px] text-slate-500 font-normal">Kamera öffnen & Foto machen</span>
+                        <input type="file" id="parcel-photo-input" accept="image/*" capture="environment" class="hidden" onchange="handleParcelPhoto(event)">
+                    </label>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Notiz (Optional)</label>
+                    <input type="text" id="parcel-notes" placeholder="z. B. Liegt im Lager Regal B" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-teal-500 text-sm">
+                </div>
+            </div>
+            <div class="p-5 border-t border-slate-700/50 bg-slate-850/60 flex space-x-3">
+                <button onclick="closeParcelModal()" class="flex-1 bg-slate-700 text-slate-200 font-bold py-3 rounded-xl text-sm transition">Abbrechen</button>
+                <button onclick="saveParcel()" class="flex-1 bg-teal-500 text-slate-900 font-bold py-3 rounded-xl text-sm transition shadow-lg shadow-teal-500/20">Paket speichern</button>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL: ROLLENAUSWAHL -->
     <div id="modal-role-select" class="fixed inset-0 bg-slate-950 z-[100] flex items-center justify-center p-4 hidden">
         <div class="bg-slate-800 border border-slate-700/80 rounded-3xl w-full max-w-lg p-6 space-y-5 shadow-2xl">
@@ -494,8 +567,6 @@
                 <button onclick="closeNewOrderModal()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             <div class="p-6 overflow-y-auto space-y-5 no-scrollbar">
-                
-                <!-- PDF Upload & Vorschau -->
                 <div>
                     <div id="pdf-upload-section" class="border-2 border-dashed border-slate-600/60 hover:border-teal-500/80 rounded-xl p-5 text-center bg-slate-900/40 cursor-pointer relative group">
                         <input type="file" id="pdf-file-input" accept="application/pdf" multiple class="absolute inset-0 opacity-0 cursor-pointer">
@@ -509,7 +580,6 @@
                     <div id="pdf-preview-container" class="hidden w-full h-[500px] border border-slate-700 rounded-xl overflow-hidden relative shadow-inner bg-slate-200 mt-4">
                         <div class="absolute top-2 left-2 bg-slate-900/80 text-white text-[10px] uppercase font-bold px-2 py-1 rounded backdrop-blur z-10">Vorschau</div>
                         <button type="button" onclick="document.getElementById('pdf-preview-container').classList.add('hidden')" class="absolute top-2 right-2 bg-rose-500 hover:bg-rose-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold shadow-lg z-10 transition"><i class="fa-solid fa-xmark mr-1"></i> Schließen</button>
-                        
                         <div id="pdf-preview-content" class="w-full h-full overflow-y-auto flex justify-center bg-slate-200 relative z-0 p-2 pt-10"></div>
                     </div>
 
@@ -641,6 +711,7 @@
 
         let db = null, auth = null, isFirebaseConnected = false;
         let orders = [];
+        let parcels = [];
         let activeTab = 'logistiker';
         let currentUserRole = null;
         let currentUserName = "";
@@ -653,15 +724,16 @@
         window.tempPdfs = []; 
         window.completingOrderId = null; 
         window.tempDeliveryPhoto = null; 
+        window.tempParcelPhoto = null;
         window.selectedForGroup = new Set(); 
         const pendingDeletes = new Set();
 
         let selectedMontageDate = new Date().toISOString().split('T')[0];
 
-        // --- Personalplan Variablen ---
+        // Personalplan
         let personalPlanData = { Helga: {}, Jacky: {} };
         let activePerson = 'Helga';
-        window.selectedMonth = new Date().toISOString().substring(0,7); // YYYY-MM
+        window.selectedMonth = new Date().toISOString().substring(0,7); 
         let isPlanEditing = false;
 
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -690,7 +762,8 @@
                         document.getElementById('statusText').innerText = "Live Online";
                         listenToDatabase();
                         listenToPins(); 
-                        listenToPersonalPlan(); 
+                        listenToPersonalPlan();
+                        listenToParcels();
                     } else fallbackToLocal();
                 });
             } catch (error) { fallbackToLocal(); }
@@ -700,6 +773,7 @@
             isFirebaseConnected = false;
             document.getElementById('statusText').innerText = "Lokal-Modus";
             orders = JSON.parse(localStorage.getItem('saelog_orders') || "[]");
+            parcels = JSON.parse(localStorage.getItem('saelog_parcels') || "[]");
             const storedPersonal = localStorage.getItem('saelog_personalplan');
             if(storedPersonal) { 
                 try { 
@@ -748,7 +822,19 @@
             });
         }
 
-        // --- Modals, PINs und Rollen ---
+        let dbUnsubscribeParcels = null;
+        function listenToParcels() {
+            if (!db) return;
+            if (dbUnsubscribeParcels) dbUnsubscribeParcels();
+            dbUnsubscribeParcels = onSnapshot(collection(db, 'artifacts', 'saelog-logistik', 'public', 'data', 'parcels'), (snapshot) => {
+                let fetched = [];
+                snapshot.forEach(doc => fetched.push({ id: doc.id, ...doc.data() }));
+                parcels = fetched;
+                if (activeTab === 'admin') renderAdminPage();
+            });
+        }
+
+        // Modals, PINs und Rollen
         window.openSettingsModal = function() {
             document.getElementById('set-pin-admin').value = PINS.admin || "";
             document.getElementById('set-pin-logistik').value = PINS.logistiker || "";
@@ -877,10 +963,11 @@
             else if (activeTab === 'montage') renderMontageAppointments();
             else if (activeTab === 'archiv') renderArchiv();
             else if (activeTab === 'plan') renderPersonalPlan();
+            else if (activeTab === 'admin') renderAdminPage();
         }
 
         // ==========================================
-        // PERSONALPLAN (GESICHERT & FEHLERGESCHÜTZT)
+        // PERSONALPLAN (MIT PLUS- / MINUSSTUNDEN)
         // ==========================================
         window.setPersonalPerson = function(name) {
             if(isPlanEditing) window.updatePersonalDataFromDOM();
@@ -917,7 +1004,6 @@
                     try {
                         await setDoc(doc(db, 'artifacts', 'saelog-logistik', 'public', 'data', 'personalplan'), personalPlanData);
                     } catch(err) {
-                        console.warn("Online-Speichern fehlgeschlagen, speichere lokal...", err);
                         localStorage.setItem('saelog_personalplan', JSON.stringify(personalPlanData));
                     }
                 } else {
@@ -928,7 +1014,6 @@
                 renderPersonalPlan();
                 alert(`Arbeitsplan für ${activePerson} erfolgreich gespeichert!`);
             } catch(e) {
-                console.error("Fehler beim Speichern:", e);
                 alert("Fehler beim Speichern: " + e.message);
             }
         };
@@ -966,7 +1051,6 @@
             const picker = document.getElementById('month-picker');
             if(picker) picker.value = window.selectedMonth;
 
-            // Automatische Tage generieren falls noch leer
             if (!personalPlanData[activePerson][window.selectedMonth] || personalPlanData[activePerson][window.selectedMonth].length === 0) {
                 let [year, month] = window.selectedMonth.split('-').map(Number);
                 let daysCount = new Date(year, month, 0).getDate();
@@ -996,7 +1080,6 @@
             const monthRows = personalPlanData[activePerson][window.selectedMonth] || [];
 
             if (!isPlanEditing) {
-                // --- ANSICHTS-MODUS ---
                 actionButtonsDiv.innerHTML = `
                     <button onclick="togglePlanEditMode()" class="bg-teal-500 hover:bg-teal-600 text-slate-900 font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-lg flex items-center">
                         <i class="fa-solid fa-pen mr-1.5"></i> Plan bearbeiten
@@ -1036,7 +1119,6 @@
                 }
 
             } else {
-                // --- BEARBEITUNGS-MODUS ---
                 actionButtonsDiv.innerHTML = `
                     <button onclick="saveAndClosePlanEdit()" class="bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-lg flex items-center">
                         <i class="fa-solid fa-floppy-disk mr-1.5"></i> Speichern & Schließen
@@ -1196,30 +1278,215 @@
         };
 
         window.calcPersonalSums = function() {
-            let h1 = 0, h2 = 0;
+            let monthSoll = 0, monthIst = 0;
+
             if (isPlanEditing) {
-                document.querySelectorAll('.plan-hours1').forEach(input => { let val = parseFloat(input.value); if(!isNaN(val)) h1 += val; });
-                document.querySelectorAll('.plan-hours2').forEach(input => { let val = parseFloat(input.value); if(!isNaN(val)) h2 += val; });
+                document.querySelectorAll('.plan-hours1').forEach(input => { let val = parseFloat(input.value); if(!isNaN(val)) monthSoll += val; });
+                document.querySelectorAll('.plan-hours2').forEach(input => { let val = parseFloat(input.value); if(!isNaN(val)) monthIst += val; });
             } else if (personalPlanData[activePerson] && personalPlanData[activePerson][window.selectedMonth]) {
                 let monthRows = personalPlanData[activePerson][window.selectedMonth];
-                h1 = monthRows.reduce((acc, r) => acc + (parseFloat(r.hours1) || 0), 0);
-                h2 = monthRows.reduce((acc, r) => acc + (parseFloat(r.hours2) || 0), 0);
+                monthSoll = monthRows.reduce((acc, r) => acc + (parseFloat(r.hours1) || 0), 0);
+                monthIst = monthRows.reduce((acc, r) => acc + (parseFloat(r.hours2) || 0), 0);
             }
 
-            let totalAllTime = 0;
+            let monthDiff = monthIst - monthSoll;
+
+            let totalSoll = 0, totalIst = 0;
             if(personalPlanData[activePerson] && typeof personalPlanData[activePerson] === 'object') {
                 Object.values(personalPlanData[activePerson]).forEach(monthRows => {
                     if(Array.isArray(monthRows)) {
                         monthRows.forEach(r => {
-                            let val = parseFloat(r.hours2);
-                            if(!isNaN(val)) totalAllTime += val;
+                            let s = parseFloat(r.hours1) || 0;
+                            let i = parseFloat(r.hours2) || 0;
+                            totalSoll += s;
+                            totalIst += i;
                         });
                     }
                 });
             }
-            document.getElementById('overall-sum').innerText = totalAllTime.toFixed(2);
+            let totalDiff = totalIst - totalSoll;
+
+            const elemSoll = document.getElementById('month-soll');
+            const elemIst = document.getElementById('month-ist');
+            const elemDiff = document.getElementById('month-diff');
+            const elemOverallDiff = document.getElementById('overall-diff');
+
+            if (elemSoll) elemSoll.innerText = monthSoll.toFixed(2);
+            if (elemIst) elemIst.innerText = monthIst.toFixed(2);
+            
+            if (elemDiff) {
+                let prefix = monthDiff >= 0 ? '+' : '';
+                elemDiff.innerText = `${prefix}${monthDiff.toFixed(2)} h`;
+                elemDiff.className = monthDiff >= 0 ? "text-emerald-400 font-black text-xl tracking-wide" : "text-rose-400 font-black text-xl tracking-wide";
+            }
+
+            if (elemOverallDiff) {
+                let prefix = totalDiff >= 0 ? '+' : '';
+                elemOverallDiff.innerText = `${prefix}${totalDiff.toFixed(2)} h`;
+                elemOverallDiff.className = totalDiff >= 0 ? "text-emerald-400 font-black text-2xl tracking-wide" : "text-rose-400 font-black text-2xl tracking-wide";
+            }
         };
 
+        // ==========================================
+        // BÜRO / ADMIN: PAKET- & ZUSTELLFOTO-GALERIE
+        // ==========================================
+        window.renderAdminPage = function() {
+            renderAdminParcels();
+            renderAdminPhotoGallery();
+        };
+
+        window.openParcelModal = function() {
+            document.getElementById('parcel-customerName').value = '';
+            document.getElementById('parcel-trackingNo').value = '';
+            document.getElementById('parcel-notes').value = '';
+            document.getElementById('parcel-photo-input').value = '';
+            document.getElementById('parcel-photo-preview-container').classList.add('hidden');
+            document.getElementById('parcel-photo-upload-label').classList.remove('hidden');
+            window.tempParcelPhoto = null;
+            document.getElementById('modal-parcel').classList.remove('hidden');
+        };
+
+        window.closeParcelModal = function() {
+            document.getElementById('modal-parcel').classList.add('hidden');
+        };
+
+        window.handleParcelPhoto = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 1000, MAX_HEIGHT = 1000;
+                    let width = img.width, height = img.height;
+                    if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } } 
+                    else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
+                    canvas.width = width; canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    window.tempParcelPhoto = canvas.toDataURL('image/jpeg', 0.6);
+                    document.getElementById('parcel-photo-preview').src = window.tempParcelPhoto;
+                    document.getElementById('parcel-photo-preview-container').classList.remove('hidden');
+                    document.getElementById('parcel-photo-upload-label').classList.add('hidden');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.removeParcelPhoto = function() {
+            window.tempParcelPhoto = null;
+            document.getElementById('parcel-photo-input').value = '';
+            document.getElementById('parcel-photo-preview-container').classList.add('hidden');
+            document.getElementById('parcel-photo-upload-label').classList.remove('hidden');
+        };
+
+        window.saveParcel = async function() {
+            const customerName = document.getElementById('parcel-customerName').value.trim();
+            const trackingNo = document.getElementById('parcel-trackingNo').value.trim();
+            const notes = document.getElementById('parcel-notes').value.trim();
+
+            if (!customerName) {
+                return alert("Bitte Kundennamen angeben.");
+            }
+
+            const parcelObj = {
+                customerName: customerName,
+                trackingNo: trackingNo || "Per Foto erfasst",
+                notes: notes,
+                photoBase64: window.tempParcelPhoto || null,
+                createdAt: new Date().toLocaleString('de-DE'),
+                createdBy: currentUserName || 'Büro'
+            };
+
+            if (isFirebaseConnected && db) {
+                await addDoc(collection(db, 'artifacts', 'saelog-logistik', 'public', 'data', 'parcels'), parcelObj);
+            } else {
+                parcelObj.id = 'parcel_' + Date.now();
+                parcels.push(parcelObj);
+                localStorage.setItem('saelog_parcels', JSON.stringify(parcels));
+                renderAdminParcels();
+            }
+
+            closeParcelModal();
+            alert("Paket-Sendung erfolgreich erfasst!");
+        };
+
+        window.deleteParcel = async function(id) {
+            if (!confirm("Möchtest du diesen Paket-Eintrag wirklich löschen?")) return;
+            if (isFirebaseConnected && db) {
+                await deleteDoc(doc(db, 'artifacts', 'saelog-logistik', 'public', 'data', 'parcels', id));
+            } else {
+                parcels = parcels.filter(p => p.id !== id);
+                localStorage.setItem('saelog_parcels', JSON.stringify(parcels));
+                renderAdminParcels();
+            }
+        };
+
+        function renderAdminParcels() {
+            const container = document.getElementById('admin-parcels-list');
+            if (!container) return;
+            container.innerHTML = '';
+
+            if (parcels.length === 0) {
+                container.innerHTML = `<div class="col-span-full p-8 text-center bg-slate-800/40 border border-dashed border-slate-700/60 rounded-2xl text-slate-500 text-sm">Keine Paket-Sendungen hinterlegt.</div>`;
+                return;
+            }
+
+            parcels.forEach(p => {
+                let photoHtml = p.photoBase64 
+                    ? `<img src="${p.photoBase64}" class="w-full h-36 object-cover rounded-xl border border-slate-700/80 cursor-pointer hover:opacity-90 transition" onclick="window.open(this.src, '_blank')" alt="Paketfoto">` 
+                    : `<div class="w-full h-24 bg-slate-900/60 rounded-xl border border-slate-700/50 flex items-center justify-center text-slate-600 text-xs font-semibold"><i class="fa-solid fa-box-open mr-1.5"></i> Kein Foto</div>`;
+                
+                let trackingDisplay = p.trackingNo ? p.trackingNo : "Per Foto erfasst";
+
+                container.innerHTML += `
+                    <div class="bg-slate-800 border border-slate-700/80 rounded-2xl p-4 space-y-3 shadow-lg relative flex flex-col justify-between">
+                        <button onclick="deleteParcel('${p.id}')" class="absolute top-3 right-3 text-rose-400 hover:text-rose-300 bg-slate-900/80 p-2 rounded-xl border border-slate-700/60 transition shadow-sm" title="Löschen"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                        <div>
+                            <span class="text-[10px] font-bold text-teal-400 uppercase tracking-wider block font-mono">NR: ${trackingDisplay}</span>
+                            <h4 class="font-bold text-white text-base mt-0.5 pr-8">${p.customerName}</h4>
+                            <p class="text-[11px] text-slate-400 mt-1"><i class="fa-regular fa-clock mr-1"></i>${p.createdAt || ''}</p>
+                            ${p.notes ? `<p class="text-xs text-slate-300 mt-2 bg-slate-900/60 p-2 rounded-xl border border-slate-700/50">${p.notes}</p>` : ''}
+                        </div>
+                        <div class="pt-2">
+                            ${photoHtml}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderAdminPhotoGallery() {
+            const container = document.getElementById('admin-delivery-gallery');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const ordersWithPhoto = orders.filter(o => o.deliveryPhotoBase64);
+
+            if (ordersWithPhoto.length === 0) {
+                container.innerHTML = `<div class="col-span-full p-8 text-center bg-slate-800/40 border border-dashed border-slate-700/60 rounded-2xl text-slate-500 text-sm">Noch keine Zustell- / Beweisfotos vorhanden.</div>`;
+                return;
+            }
+
+            ordersWithPhoto.forEach(o => {
+                let dateFormatted = o.deliveryDate ? o.deliveryDate.split('-').reverse().join('.') : 'Datum n.a.';
+                container.innerHTML += `
+                    <div class="bg-slate-800 border border-slate-700/80 rounded-2xl p-3 shadow-lg space-y-2">
+                        <div class="relative overflow-hidden rounded-xl h-44 bg-slate-900">
+                            <img src="${o.deliveryPhotoBase64}" class="w-full h-full object-cover cursor-pointer hover:scale-105 transition duration-300" onclick="window.open(this.src, '_blank')" alt="Zustellfoto">
+                            <span class="absolute top-2 left-2 bg-slate-900/80 backdrop-blur text-teal-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-teal-500/30">${dateFormatted}</span>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-white text-sm truncate">${o.customerName}</h4>
+                            <p class="text-[11px] text-slate-400 truncate"><i class="fa-solid fa-location-dot text-teal-400 mr-1"></i>${o.address || ''}</p>
+                            <button onclick="showOrderDetails('${o.id}')" class="mt-2 w-full bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs py-1.5 rounded-xl font-bold transition">Auftrag öffnen</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
 
         // ==========================================
         // GRUPPIERUNG LOGIK (PALETTE)
@@ -1390,7 +1657,7 @@
             optimizeLogistikPackliste(false);
         };
 
-        // --- FAHRER & ROUTEN & MAPS ---
+        // FAHRER & ROUTEN & MAPS
         window.renderFahrerTour = function() {
             const listTour = document.getElementById('list-fahrer-tour');
             const selectedDate = document.getElementById('fahrer-date-filter').value;
@@ -1560,7 +1827,7 @@
             setTimeout(() => { leafletMap.invalidateSize(); leafletMap.fitBounds(mapLayer.getBounds(), {padding: [40, 40]}); }, 300);
         };
 
-        // --- MONTAGE UND ARCHIV ---
+        // MONTAGE UND ARCHIV
         window.setMontageDate = function(dateStr) { selectedMontageDate = dateStr; renderMontageAppointments(); };
 
         function renderMontageAppointments() {
@@ -1666,8 +1933,7 @@
             });
         }
         
-        // --- ORDER MANAGEMENT & MULTI PDF ---
-
+        // ORDER MANAGEMENT & MULTI PDF
         window.previewPdf = async function(index) {
             const pdfData = window.tempPdfs[index];
             if (!pdfData) return;
@@ -1700,7 +1966,6 @@
                 content.innerHTML = '';
                 content.appendChild(canvas);
             } catch (e) {
-                console.error("PDF Preview Fehler:", e);
                 content.innerHTML = '<div class="flex items-center justify-center h-full w-full text-rose-500 text-sm font-bold"><i class="fa-solid fa-triangle-exclamation mr-2"></i> Vorschau konnte nicht geladen werden.</div>';
             }
         };
@@ -1883,7 +2148,7 @@
             } catch(e) { alert("PDF konnte nicht geöffnet werden."); }
         };
 
-        // --- PDF-PARSER ---
+        // PDF-PARSER
         function setupPDFParser() {
             document.getElementById('pdf-file-input').addEventListener('change', async (e) => {
                 const files = e.target.files; if (!files || files.length === 0) return;
